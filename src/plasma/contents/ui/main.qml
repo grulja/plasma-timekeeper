@@ -26,10 +26,10 @@ Item {
     id: mainWindow
 
     Plasmoid.toolTipMainText: i18n("Activity")
-//     Plasmoid.toolTipSubText: networkStatus.activeConnections
+//     Plasmoid.toolTipSubText:
 
-//     Plasmoid.switchWidth: units.gridUnit * 12
-//     Plasmoid.switchHeight: units.gridUnit * 12
+    Plasmoid.switchWidth: units.gridUnit * 12
+    Plasmoid.switchHeight: units.gridUnit * 12
 
     Plasmoid.fullRepresentation: PopupDialog {
         id: dialogItem
