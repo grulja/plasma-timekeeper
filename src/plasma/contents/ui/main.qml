@@ -18,9 +18,10 @@
  ***************************************************************************/
 
 import QtQuick 2.2
+import QtQuick.Layouts 1.1
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
-import QtQuick.Layouts 1.1
+import org.kde.plasma.timekeeper 0.2 as PlasmaTimekeeper
 
 Item {
     id: mainWindow
@@ -30,6 +31,10 @@ Item {
 
     Plasmoid.switchWidth: units.gridUnit * 12
     Plasmoid.switchHeight: units.gridUnit * 12
+
+    PlasmaTimekeeper.ActivityModel {
+        id: activityModel
+    }
 
     Plasmoid.fullRepresentation: PopupDialog {
         id: dialogItem

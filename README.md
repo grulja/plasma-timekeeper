@@ -1,5 +1,5 @@
-# Plasma activity monitor
-Plasma applet for monitoring your activity
+# Plasma timekeeper
+Time tracking plasma applet
 
 Author: Jan Grulich &lt;jgrulich@redhat.com&gt;
 

@@ -18,8 +18,8 @@
     License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLASMA_ACTIVITY_MONITOR_ACTIVITY_SORT_MODEL_H
-#define PLASMA_ACTIVITY_MONITOR_ACTIVITY_SORT_MODEL_H
+#ifndef PLASMA_TIMEKEEPER_ACTIVITY_SORT_MODEL_H
+#define PLASMA_TIMEKEEPER_ACTIVITY_SORT_MODEL_H
 
 #include <QSortFilterProxyModel>
 
@@ -39,4 +39,4 @@ protected:
 };
 
 
-#endif // PLASMA_ACTIVITY_MONITOR_ACTIVITY_SORT_MODEL_H
+#endif // PLASMA_TIMEKEEPER_ACTIVITY_SORT_MODEL_H

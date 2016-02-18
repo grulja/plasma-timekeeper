@@ -26,10 +26,10 @@
 
 void QmlPlugins::registerTypes(const char* uri)
 {
-    Q_ASSERT(uri == QLatin1String("org.kde.plasma.activitymonitor"));
+    Q_ASSERT(uri == QLatin1String("org.kde.plasma.timekeeper"));
 
-    // @uri org.kde.plasma.activitymonitor.ActivityModel
+    // @uri org.kde.plasma.timekeeper.ActivityModel
     qmlRegisterType<ActivityModel>(uri, 0, 2, "ActivityModel");
-    // @uri org.kde.plasma.activitymonitor.ActivitySortModel
+    // @uri org.kde.plasma.timekeeper.ActivitySortModel
     qmlRegisterType<ActivitySortModel>(uri, 0, 2, "ActivitySortModel");
 }

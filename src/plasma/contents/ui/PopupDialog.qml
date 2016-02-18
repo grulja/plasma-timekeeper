@@ -22,15 +22,11 @@ import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.plasma.components 2.0 as PlasmaComponents
-import org.kde.plasma.activitymonitor 0.2 as PlasmaActivityMonitor
+import org.kde.plasma.timekeeper 0.2 as PlasmaTimekeeper
 
 FocusScope {
 
-    PlasmaActivityMonitor.ActivityModel {
-        id: activityModel
-    }
-
-    PlasmaActivityMonitor.ActivitySortModel {
+    PlasmaTimekeeper.ActivitySortModel {
         id: activitySortModel
         sourceModel: activityModel
     }
@@ -60,7 +56,7 @@ FocusScope {
     PlasmaComponents.Button {
         id: enableTrackingButton
 
-        property bool trackingEnabled: activityModel.trackingEnabled
+        property bool timeTrackingEnabled: activityModel.timeTrackingEnabled
 
         anchors {
             bottom: parent.bottom
@@ -70,12 +66,12 @@ FocusScope {
         }
         width: parent.width / 2
 
-        iconSource: trackingEnabled ? "media-record" : "media-playback-stop"
-        text: trackingEnabled ? i18n("Start tracking") : i18n("Stop tracking")
+        iconSource: timeTrackingEnabled ? "media-playback-stop" : "media-record"
+        text: timeTrackingEnabled ? i18n("Stop time tracking") : i18n("Start time tracking")
 
         onClicked: {
-            trackingEnabled = !trackingEnabled
-            activityModel.trackingEnabled = trackingEnabled
+            timeTrackingEnabled = !timeTrackingEnabled
+            activityModel.timeTrackingEnabled = timeTrackingEnabled
         }
     }
 
@@ -96,7 +92,7 @@ FocusScope {
         text: i18n("Reset")
 
         onClicked: {
-            activityModel.reset()
+            activityModel.resetTimeStatistics()
         }
     }
 }

@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Activity monitor
+Name=Plasma timekeeper
 
-Comment=Monitor your desktop activity
+Comment=Time tracking plasma applet
 
 Icon=utilities-system-monitor
 Type=Service
@@ -12,7 +12,7 @@ X-Plasma-MainScript=ui/main.qml
 
 X-Plasma-NotificationArea=true
 
-X-KDE-PluginInfo-Name=org.kde.plasma.activitymonitor
+X-KDE-PluginInfo-Name=org.kde.plasma.timekeeper
 X-KDE-PluginInfo-Category=System Information
 X-KDE-PluginInfo-Author=Jan Grulich
 X-KDE-PluginInfo-Email=jgrulich@redhat.com

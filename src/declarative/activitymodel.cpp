@@ -24,10 +24,14 @@
 #include <KWindowSystem>
 
 #include <QLoggingCategory>
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusPendingCall>
+#include <QDBusPendingReply>
 
 Q_DECLARE_LOGGING_CATEGORY(PLASMA_ACTIVITY_MONITOR)
 
-Q_LOGGING_CATEGORY(PLASMA_ACTIVITY_MONITOR, "plasma-activity-monitor")
+Q_LOGGING_CATEGORY(PLASMA_ACTIVITY_MONITOR, "plasma-timekeeper")
 
 /*                          ActivityModelItem                              *
  * ----------------------------------------------------------------------- */
@@ -82,15 +86,39 @@ void ActivityModelItem::addSeconds(int secs)
 ActivityModel::ActivityModel(QObject* parent)
     : QAbstractListModel(parent),
       m_timer(new QTimer(this)),
-      m_trackingEnabled(false)
+      m_timeTrackingEnabled(true),
+      m_screenLocked(false)
 {
-    QLoggingCategory::setFilterRules(QStringLiteral("plasma-activity-monitor.debug = false"));
+    QLoggingCategory::setFilterRules(QStringLiteral("plasma-timekeeper.debug = false"));
+
+    QDBusInterface iface(QStringLiteral("org.kde.ksmserver"),
+                         QStringLiteral("/ScreenSaver"),
+                         QStringLiteral("org.freedesktop.ScreenSaver"),
+                         QDBusConnection::sessionBus());
+
+    // I guess there is a minimum chance that the applet will be started while the system
+    // is locked, but it's better to be sure (e.g. plasmashell crash)
+    QDBusPendingCall dbusCall = iface.asyncCall(QStringLiteral("GetActive"));
+    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(dbusCall);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, [this] (QDBusPendingCallWatcher* watcher) {
+        QDBusPendingReply<bool> reply = *watcher;
+        if (reply.isValid()) {
+            m_screenLocked = reply.value();
+        }
+    });
 
     // Process the currently active window
     activeWindowChanged(KWindowSystem::activeWindow());
 
     connect(KWindowSystem::self(), &KWindowSystem::activeWindowChanged, this, &ActivityModel::activeWindowChanged, Qt::UniqueConnection);
-    connect(m_timer, &QTimer::timeout, this, &ActivityModel::updateTime);
+    connect(m_timer, &QTimer::timeout, this, &ActivityModel::updateCurrentActivityTime);
+
+    QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.ksmserver"),
+                                          QStringLiteral("/ScreenSaver"),
+                                          QStringLiteral("org.freedesktop.ScreenSaver"),
+                                          QStringLiteral("ActiveChanged"),
+                                          this,
+                                          SLOT(lockscreenActivityChanged(bool)));
 }
 
 ActivityModel::~ActivityModel()
@@ -138,34 +166,27 @@ QHash< int, QByteArray > ActivityModel::roleNames() const
     return roles;
 }
 
-bool ActivityModel::trackingEnabled() const
+bool ActivityModel::timeTrackingEnabled() const
 {
-    return m_trackingEnabled;
+    return m_timeTrackingEnabled;
 }
 
-void ActivityModel::setTrackingEnabled(bool enable)
+void ActivityModel::setTimeTrackingEnabled(bool enabled)
 {
-    // Process the currently active window
-    activeWindowChanged(KWindowSystem::activeWindow());
+    m_timeTrackingEnabled = enabled;
+    Q_EMIT timeTrackingEnabledChanged(m_timeTrackingEnabled);
 
-    m_trackingEnabled = enable;
-
-    Q_EMIT trackingEnabledChanged(m_trackingEnabled);
+    stopTracking(!m_timeTrackingEnabled);
 }
 
-void ActivityModel::reset(const QString& activity)
+void ActivityModel::resetTimeStatistics()
 {
     Q_FOREACH (ActivityModelItem * item, m_list) {
-        if (activity.isEmpty() || (!activity.isEmpty() && activity == item->activityName())) {
-            item->setActivityTime(QTime(0, 0, 0));
-            updateItem(item);
-        }
+        item->setActivityTime(QTime(0, 0, 0));
+        updateItem(item);
     }
 
-    m_currentActivity = QString();
-    m_currentTime = QTime::currentTime();
-
-    // Process the currently active window
+    resetCurrentActiveWindow();
     activeWindowChanged(KWindowSystem::activeWindow());
 }
 
@@ -179,6 +200,12 @@ void ActivityModel::activeWindowChanged(WId window)
         return;
     }
 
+    if (!m_timeTrackingEnabled) {
+        qCDebug(PLASMA_ACTIVITY_MONITOR) << "Monitoring disabled, ignoring new active window";
+        return;
+    }
+
+    // Find if the activity already exists and if not add it to the model
     auto activityExist = std::find_if(m_list.constBegin(), m_list.constEnd(), [info] (ActivityModelItem * activityItem) {
         return activityItem->activityName() == info.windowClassName();
     });
@@ -196,35 +223,61 @@ void ActivityModel::activeWindowChanged(WId window)
         endInsertRows();
     }
 
-    if (!m_trackingEnabled) {
-        // Update previous activity
-        Q_FOREACH (ActivityModelItem * item, m_list) {
-            if (m_currentActivity == item->activityName()) {
-                item->addSeconds(m_currentTime.secsTo(QTime::currentTime()));
-                updateItem(item);
-            }
-        }
+    // Process the current activity
+    updateCurrentActivityTime();
 
+    // Process the next activity
+    if (!m_timeTrackingEnabled && !m_screenLocked) {
         // Start timer to update the time every minute
         m_timer->stop();
+        // TODO make this configurable
         m_timer->start(60000);
     }
 
     // Save current time and activity
-    m_currentActivity = info.windowClassName();
+    m_currentActiveWindow = info.windowClassName();
     m_currentTime = QTime::currentTime();
 }
 
-void ActivityModel::updateTime()
+void ActivityModel::lockscreenActivityChanged(bool active)
+{
+    m_screenLocked = active;
+
+    stopTracking(m_screenLocked);
+}
+
+void ActivityModel::updateCurrentActivityTime()
 {
     Q_FOREACH (ActivityModelItem * item, m_list) {
-        if (m_currentActivity == item->activityName()) {
-            item->addSeconds(60);
+        if (m_currentActiveWindow == item->activityName()) {
+            item->addSeconds(m_currentTime.secsTo(QTime::currentTime()));
             updateItem(item);
         }
     }
-    m_currentTime = m_currentTime.addSecs(60);
+
+    m_currentTime = QTime::currentTime();
     m_timer->start(60000);
+}
+
+void ActivityModel::stopTracking(bool stop)
+{
+    if (stop) {
+        // Add remaining seconds
+        updateCurrentActivityTime();
+        // Reset current item and stop the timer
+        resetCurrentActiveWindow();
+    } else {
+        // Start again with current active window
+        activeWindowChanged(KWindowSystem::activeWindow());
+    }
+}
+
+void ActivityModel::resetCurrentActiveWindow()
+{
+    // Reset current activity and time
+    m_currentActiveWindow = QString();
+    m_currentTime = QTime::currentTime();
+    m_timer->stop();
 }
 
 void ActivityModel::updateItem(ActivityModelItem* item)

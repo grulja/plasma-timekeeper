@@ -18,8 +18,8 @@
     License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLASMA_ACTIVITY_MONITOR_QML_PLUGINS_H
-#define PLASMA_ACTIVITY_MONITOR_QML_PLUGINS_H
+#ifndef PLASMA_TIMEKEEPER_QML_PLUGINS_H
+#define PLASMA_TIMEKEEPER_QML_PLUGINS_H
 
 #include <QQmlExtensionPlugin>
 
@@ -31,4 +31,4 @@ public:
     void registerTypes(const char * uri) Q_DECL_OVERRIDE;
 };
 
-#endif // PLASMA_ACTIVITY_MONITOR_QML_PLUGINS_H
+#endif // PLASMA_TIMEKEEPER_QML_PLUGINS_H

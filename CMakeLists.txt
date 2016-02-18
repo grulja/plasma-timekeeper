@@ -1,4 +1,4 @@
-project(plasma-activity-monitor)
+project(plasma-timekeeper)
 
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 set(QT_MIN_VERSION "5.4.0")

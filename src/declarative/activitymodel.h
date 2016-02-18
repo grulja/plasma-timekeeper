@@ -18,8 +18,8 @@
     License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLASMA_ACTIVITY_MONITOR_ACTIVITY_MODEL_H
-#define PLASMA_ACTIVITY_MONITOR_ACTIVITY_MODEL_H
+#ifndef PLASMA_TIMEKEEPER_ACTIVITY_MODEL_H
+#define PLASMA_TIMEKEEPER_ACTIVITY_MODEL_H
 
 #include <QAbstractListModel>
 #include <QTime>
@@ -61,7 +61,7 @@ private:
 class Q_DECL_EXPORT ActivityModel : public QAbstractListModel
 {
 Q_OBJECT
-Q_PROPERTY(bool trackingEnabled READ trackingEnabled WRITE setTrackingEnabled NOTIFY trackingEnabledChanged)
+Q_PROPERTY(bool timeTrackingEnabled READ timeTrackingEnabled WRITE setTimeTrackingEnabled NOTIFY timeTrackingEnabledChanged)
 public:
 
     explicit ActivityModel(QObject* parent = 0);
@@ -77,27 +77,31 @@ public:
     QVariant data(const QModelIndex& index, int role) const Q_DECL_OVERRIDE;
     virtual QHash< int, QByteArray > roleNames() const Q_DECL_OVERRIDE;
 
-    bool trackingEnabled() const;
-    void setTrackingEnabled(bool enable);
+    bool timeTrackingEnabled() const;
+    void setTimeTrackingEnabled(bool enabled);
 
 public Q_SLOTS:
-    void reset(const QString& activity = QString());
+    void resetTimeStatistics();
 
 private Q_SLOTS:
     void activeWindowChanged(WId window);
-    void updateTime();
+    void lockscreenActivityChanged(bool active);
+    void updateCurrentActivityTime();
 
 Q_SIGNALS:
-    void trackingEnabledChanged(bool enabled);
+    void timeTrackingEnabledChanged(bool enabled);
 
 private:
     QList<ActivityModelItem*> m_list;
-    QString m_currentActivity;
+    QString m_currentActiveWindow;
     QTime m_currentTime;
     QTimer* m_timer;
-    bool m_trackingEnabled;
+    bool m_timeTrackingEnabled;
+    bool m_screenLocked;
 
+    void stopTracking(bool stop);
+    void resetCurrentActiveWindow();
     void updateItem(ActivityModelItem* item);
 };
 
-#endif // PLASMA_ACTIVITY_MONITOR_ACTIVITY_MODEL_H
+#endif // PLASMA_TIMEKEEPER_ACTIVITY_MODEL_H

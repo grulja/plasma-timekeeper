@@ -1,15 +1,16 @@
-add_definitions(-DTRANSLATION_DOMAIN="activitymonitor")
+add_definitions(-DTRANSLATION_DOMAIN="timekeeper")
 
-set(plasmaactivitymonitor_qmlplugins_SRCS
+set(plasmatimekeeper_qmlplugins_SRCS
    activitymodel.cpp
    activitysortmodel.cpp
    qmlplugins.cpp
 )
 
-add_library(plasmaactivitymonitor_qmlplugins SHARED ${plasmaactivitymonitor_qmlplugins_SRCS})
+add_library(plasmatimekeeper_qmlplugins SHARED ${plasmatimekeeper_qmlplugins_SRCS})
 
-target_link_libraries(plasmaactivitymonitor_qmlplugins
+target_link_libraries(plasmatimekeeper_qmlplugins
     Qt5::Core
+    Qt5::DBus
     Qt5::Qml
     Qt5::Widgets
     KF5::I18n
@@ -17,5 +18,5 @@ target_link_libraries(plasmaactivitymonitor_qmlplugins
     KF5::WindowSystem
 )
 
-install(TARGETS plasmaactivitymonitor_qmlplugins DESTINATION ${QML_INSTALL_DIR}/org/kde/plasma/activitymonitor)
-install(FILES qmldir DESTINATION ${QML_INSTALL_DIR}/org/kde/plasma/activitymonitor)
+install(TARGETS plasmatimekeeper_qmlplugins DESTINATION ${QML_INSTALL_DIR}/org/kde/plasma/timekeeper)
+install(FILES qmldir DESTINATION ${QML_INSTALL_DIR}/org/kde/plasma/timekeeper)
