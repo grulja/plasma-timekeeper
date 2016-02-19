@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Plasma timekeeper
+Name=Timekeeper
 
-Comment=Time tracking plasma applet
+Comment=Plasma applet tracking your desktop activity
 
 Icon=utilities-system-monitor
 Type=Service
