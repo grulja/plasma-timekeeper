@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016 by Jan Grulich <jgrulich@redhat.com>               *
+ *   Copyright 2013 by Sebastian Kügler <sebas@kde.org>                    *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -17,31 +17,14 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .        *
  ***************************************************************************/
 
-import QtQuick 2.2
-import QtQuick.Layouts 1.1
-import org.kde.plasma.plasmoid 2.0
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.timekeeper 0.2 as PlasmaTimekeeper
+import QtQuick 2.0
 
-Item {
-    id: mainWindow
+import org.kde.plasma.configuration 2.0
 
-    Plasmoid.toolTipMainText: i18n("Activity")
-
-    Plasmoid.switchWidth: units.gridUnit * 12
-    Plasmoid.switchHeight: units.gridUnit * 12
-
-    PlasmaTimekeeper.ActivityModel {
-        id: activityModel
-        resetOnSuspend: plasmoid.configuration.reset_on_suspend
-        resetOnShutdown: plasmoid.configuration.reset_on_shutdown
-    }
-
-    Plasmoid.fullRepresentation: PopupDialog {
-        id: dialogItem
-        Layout.minimumWidth: units.iconSizes.medium * 8
-        Layout.minimumHeight: units.gridUnit * 16
-        anchors.fill: parent
-        focus: true
+ConfigModel {
+    ConfigCategory {
+         name: i18n("General")
+         icon: "utilities-system-monitor"
+         source: "ConfigGeneral.qml"
     }
 }

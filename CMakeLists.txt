@@ -33,6 +33,7 @@ find_package(KF5 REQUIRED
     CoreAddons
     Declarative
     I18n
+    ConfigWidgets
     Plasma
     WindowSystem
 )

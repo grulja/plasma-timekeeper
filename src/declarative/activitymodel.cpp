@@ -20,7 +20,11 @@
 
 #include "activitymodel.h"
 
+#include <KConfig>
+#include <KConfigGroup>
 #include <KLocalizedString>
+#include <KSharedConfig>
+
 #include <KWindowSystem>
 
 #include <QLoggingCategory>
@@ -29,65 +33,127 @@
 #include <QDBusPendingCall>
 #include <QDBusPendingReply>
 
-Q_DECLARE_LOGGING_CATEGORY(PLASMA_ACTIVITY_MONITOR)
+Q_DECLARE_LOGGING_CATEGORY(PLASMA_TIMEKEEPER)
 
-Q_LOGGING_CATEGORY(PLASMA_ACTIVITY_MONITOR, "plasma-timekeeper")
+Q_LOGGING_CATEGORY(PLASMA_TIMEKEEPER, "plasma-timekeeper")
+
+/*                     ActivityModelItem::Private                          *
+ * ----------------------------------------------------------------------- */
+class ActivityModelItem::Private
+{
+public:
+    Private()
+    { }
+
+    QPixmap activityIcon;
+    QPixmap activityDefaultIcon;
+    QString activityName;
+    QTime activityTime;
+};
 
 /*                          ActivityModelItem                              *
  * ----------------------------------------------------------------------- */
 
 ActivityModelItem::ActivityModelItem(QObject* parent)
-    : QObject(parent)
+    : QObject(parent),
+      d(new Private())
 {
 }
 
 ActivityModelItem::~ActivityModelItem()
 {
+    delete d;
 }
 
 void ActivityModelItem::setActivityIcon(const QPixmap& icon)
 {
-    m_activityIcon = icon;
+    d->activityIcon = icon;
 }
 
 QPixmap ActivityModelItem::activityIcon() const
 {
-    return m_activityIcon;
+    return d->activityIcon;
+}
+
+void ActivityModelItem::setActivityDefaultIcon(const QPixmap& icon)
+{
+    d->activityDefaultIcon = icon;
+}
+
+QPixmap ActivityModelItem::activityDefaultIcon() const
+{
+    return d->activityDefaultIcon;
 }
 
 void ActivityModelItem::setActivityName(const QString& name)
 {
-    m_activityName = name;
+    d->activityName = name;
 }
 
 QString ActivityModelItem::activityName() const
 {
-    return m_activityName;
+    return d->activityName;
 }
 
 void ActivityModelItem::setActivityTime(const QTime& time)
 {
-    m_activityTime = time;
+    d->activityTime = time;
 }
 
 QTime ActivityModelItem::activityTime() const
 {
-    return m_activityTime;
+    return d->activityTime;
 }
 
 void ActivityModelItem::addSeconds(int secs)
 {
-    m_activityTime = m_activityTime.addSecs(secs);
+    d->activityTime = d->activityTime.addSecs(secs);
 }
+
+/*                     ActivityModel::Private                              *
+ * ----------------------------------------------------------------------- */
+class ActivityModel::Private
+{
+public:
+    Private()
+    : preparingForSleep(false),
+      preparingForShutdown(false),
+      resetOnSuspend(false),
+      resetOnShutdown(false),
+      screenLocked(false),
+      timeTrackingEnabled(true),
+      timer(new QTimer())
+    { }
+
+    ~Private()
+    {
+        delete timer;
+    }
+
+    bool preparingForSleep;
+    bool preparingForShutdown;
+    bool resetOnSuspend;
+    bool resetOnShutdown;
+    bool screenLocked;
+    bool timeTrackingEnabled;
+
+    // Current activity and time when the activity was updated for the last time
+    QString currentActiveWindow;
+    QTime currentTime;
+
+    // List of activities
+    QList<ActivityModelItem*> list;
+
+    // Timer
+    QTimer* timer;
+};
 
 /*                          ActivityModel                                  *
  * ----------------------------------------------------------------------- */
 
 ActivityModel::ActivityModel(QObject* parent)
     : QAbstractListModel(parent),
-      m_timer(new QTimer(this)),
-      m_timeTrackingEnabled(true),
-      m_screenLocked(false)
+      d(new Private())
 {
     QLoggingCategory::setFilterRules(QStringLiteral("plasma-timekeeper.debug = false"));
 
@@ -103,15 +169,12 @@ ActivityModel::ActivityModel(QObject* parent)
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished, [this] (QDBusPendingCallWatcher* watcher) {
         QDBusPendingReply<bool> reply = *watcher;
         if (reply.isValid()) {
-            m_screenLocked = reply.value();
+            d->screenLocked = reply.value();
         }
     });
 
-    // Process the currently active window
-    activeWindowChanged(KWindowSystem::activeWindow());
-
     connect(KWindowSystem::self(), &KWindowSystem::activeWindowChanged, this, &ActivityModel::activeWindowChanged, Qt::UniqueConnection);
-    connect(m_timer, &QTimer::timeout, this, &ActivityModel::updateCurrentActivityTime);
+    connect(d->timer, &QTimer::timeout, this, &ActivityModel::updateCurrentActivityTime);
 
     QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.ksmserver"),
                                           QStringLiteral("/ScreenSaver"),
@@ -119,28 +182,68 @@ ActivityModel::ActivityModel(QObject* parent)
                                           QStringLiteral("ActiveChanged"),
                                           this,
                                           SLOT(lockscreenActivityChanged(bool)));
+
+    QDBusConnection::systemBus().connect(QStringLiteral("org.freedesktop.login1"),
+                                         QStringLiteral("/org/freedesktop/login1"),
+                                         QStringLiteral("org.freedesktop.login1.Manager"),
+                                         QStringLiteral("PrepareForSleep"),
+                                         this,
+                                         SLOT(prepareForSleepChanged(bool)));
+
+    QDBusConnection::systemBus().connect(QStringLiteral("org.freedesktop.login1"),
+                                         QStringLiteral("/org/freedesktop/login1"),
+                                         QStringLiteral("org.freedesktop.login1.Manager"),
+                                         QStringLiteral("PrepareForShutdown"),
+                                         this,
+                                         SLOT(prepareForShutdownChanged(bool)));
+
+    // Load previous values
+    KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
+    Q_FOREACH (const QString& groupName, config->groupList()) {
+        // Ignore the general group
+        if (groupName == QLatin1String("general")) {
+            continue;
+        }
+
+        KConfigGroup group(config, groupName);
+        if (group.isValid()) {
+            ActivityModelItem *item = new ActivityModelItem();
+            item->setActivityName(groupName);
+            item->setActivityDefaultIcon(QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64)));
+            item->setActivityTime(QTime::fromString(group.readEntry("time")));
+
+            const int index = d->list.count();
+            beginInsertRows(QModelIndex(), index, index);
+            d->list << item;
+            endInsertRows();
+        }
+    }
+
+    // Process the currently active window
+    activeWindowChanged(KWindowSystem::activeWindow());
 }
 
 ActivityModel::~ActivityModel()
 {
+    delete d;
 }
 
 QVariant ActivityModel::data(const QModelIndex& index, int role) const
 {
     const int row = index.row();
 
-    if (row >= 0 && row < m_list.count()) {
-        ActivityModelItem * item = m_list.at(row);
+    if (row >= 0 && row < d->list.count()) {
+        ActivityModelItem * item = d->list.at(row);
 
         switch (role) {
             case ActivityIconRole:
-                return item->activityIcon();
+                return item->activityIcon().isNull() ? item->activityDefaultIcon() : item->activityIcon();
                 break;
             case ActivityNameRole:
                 return item->activityName();
                 break;
             case ActivityTimeRole:
-                return item->activityTime().toString(QLatin1String("hh:mm:ss"));
+                return item->activityTime().toString(Qt::RFC2822Date);
                 break;
             default:
                 break;
@@ -153,7 +256,7 @@ QVariant ActivityModel::data(const QModelIndex& index, int role) const
 int ActivityModel::rowCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent);
-    return m_list.count();
+    return d->list.count();
 }
 
 QHash< int, QByteArray > ActivityModel::roleNames() const
@@ -168,124 +271,180 @@ QHash< int, QByteArray > ActivityModel::roleNames() const
 
 bool ActivityModel::timeTrackingEnabled() const
 {
-    return m_timeTrackingEnabled;
+    return d->timeTrackingEnabled;
 }
 
 void ActivityModel::setTimeTrackingEnabled(bool enabled)
 {
-    m_timeTrackingEnabled = enabled;
-    Q_EMIT timeTrackingEnabledChanged(m_timeTrackingEnabled);
+    d->timeTrackingEnabled = enabled;
 
-    stopTracking(!m_timeTrackingEnabled);
+    updateTrackingState();
+}
+
+void ActivityModel::setResetOnSuspend(bool reset)
+{
+    qCDebug(PLASMA_TIMEKEEPER) << "Reset on suspend " << reset;
+    d->resetOnSuspend = reset;
+}
+
+void ActivityModel::setResetOnShutdown(bool reset)
+{
+    d->resetOnShutdown = reset;
 }
 
 void ActivityModel::resetTimeStatistics()
 {
-    Q_FOREACH (ActivityModelItem * item, m_list) {
-        item->setActivityTime(QTime(0, 0, 0));
-        updateItem(item);
+    KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
+
+    Q_FOREACH (ActivityModelItem* item, d->list) {
+        config->deleteGroup(item->activityName());
+
+        const int row = d->list.indexOf(item);
+        if (row >= 0) {
+            beginRemoveRows(QModelIndex(), row, row);
+            d->list.removeAt(row);
+            item->deleteLater();
+            endRemoveRows();
+        }
     }
 
-    resetCurrentActiveWindow();
-    activeWindowChanged(KWindowSystem::activeWindow());
+    // Reset current item
+    d->currentActiveWindow = QString();
+    d->currentTime = QTime::currentTime();
+
+    // If time tracking is not enabled we don't need to start it again
+    if (d->timeTrackingEnabled) {
+        activeWindowChanged(KWindowSystem::activeWindow());
+    }
 }
 
 void ActivityModel::activeWindowChanged(WId window)
 {
     KWindowInfo info = KWindowInfo(window, NET::WMName | NET::WMIconName, NET::WM2WindowClass);
 
-    qCDebug(PLASMA_ACTIVITY_MONITOR) << "Active window changed to " << info.windowClassName();
+    qCDebug(PLASMA_TIMEKEEPER) << "Active window changed to " << info.windowClassName();
 
     if (info.windowClassName().isEmpty()) {
         return;
     }
 
-    if (!m_timeTrackingEnabled) {
-        qCDebug(PLASMA_ACTIVITY_MONITOR) << "Monitoring disabled, ignoring new active window";
+    if (!d->timeTrackingEnabled) {
+        qCDebug(PLASMA_TIMEKEEPER) << "Monitoring disabled, ignoring new active window";
         return;
     }
 
     // Find if the activity already exists and if not add it to the model
-    auto activityExist = std::find_if(m_list.constBegin(), m_list.constEnd(), [info] (ActivityModelItem * activityItem) {
-        return activityItem->activityName() == info.windowClassName();
-    });
+    QList<ActivityModelItem*>::iterator it;
+    for (it = d->list.begin(); it != d->list.end(); ++it) {
+        if ((*it)->activityName() == info.windowClassName()) {
+            break;
+        }
+    }
 
-    if (activityExist == m_list.constEnd()) {
-        qCDebug(PLASMA_ACTIVITY_MONITOR) << "Adding new activity item " << info.windowClassName();
+    if (it == d->list.end()) {
+        qCDebug(PLASMA_TIMEKEEPER) << "Adding new activity item " << info.windowClassName();
         ActivityModelItem *item = new ActivityModelItem();
         item->setActivityName(info.windowClassName());
         item->setActivityIcon(KWindowSystem::icon(window, 64, 64, true));
         item->setActivityTime(QTime(0, 0, 0));
 
-        const int index = m_list.count();
+        const int index = d->list.count();
         beginInsertRows(QModelIndex(), index, index);
-        m_list << item;
+        d->list << item;
         endInsertRows();
+    } else if ((*it)->activityIcon().isNull()) { // Update icon to avoid using the default one
+        (*it)->setActivityIcon(KWindowSystem::icon(window, 64, 64, true));
+        const int row = d->list.indexOf((*it));
+        if (row >= 0) {
+            QModelIndex index = createIndex(row, 0);
+            Q_EMIT dataChanged(index, index);
+        }
     }
 
     // Process the current activity
     updateCurrentActivityTime();
 
     // Process the next activity
-    if (!m_timeTrackingEnabled && !m_screenLocked) {
+    if (!d->timeTrackingEnabled && !d->screenLocked) {
         // Start timer to update the time every minute
-        m_timer->stop();
+        d->timer->stop();
         // TODO make this configurable
-        m_timer->start(60000);
+        d->timer->start(60000);
     }
 
     // Save current time and activity
-    m_currentActiveWindow = info.windowClassName();
-    m_currentTime = QTime::currentTime();
+    d->currentActiveWindow = info.windowClassName();
+    d->currentTime = QTime::currentTime();
 }
 
 void ActivityModel::lockscreenActivityChanged(bool active)
 {
-    m_screenLocked = active;
+    d->screenLocked = active;
 
-    stopTracking(m_screenLocked);
+    updateTrackingState();
+}
+
+void ActivityModel::prepareForSleepChanged(bool sleep)
+{
+    d->preparingForSleep = sleep;
+
+    updateTrackingState();
+
+    if (d->preparingForSleep && d->resetOnSuspend) {
+        resetTimeStatistics();
+    }
+}
+
+void ActivityModel::prepareForShutdownChanged(bool shutdown)
+{
+    d->preparingForShutdown = shutdown;
+
+    updateTrackingState();
+
+    if (d->resetOnShutdown && d->resetOnShutdown) {
+        resetTimeStatistics();
+    }
 }
 
 void ActivityModel::updateCurrentActivityTime()
 {
-    Q_FOREACH (ActivityModelItem * item, m_list) {
-        if (m_currentActiveWindow == item->activityName()) {
-            item->addSeconds(m_currentTime.secsTo(QTime::currentTime()));
-            updateItem(item);
+    Q_FOREACH (ActivityModelItem * item, d->list) {
+        if (d->currentActiveWindow == item->activityName()) {
+            item->addSeconds(d->currentTime.secsTo(QTime::currentTime()));
+
+            const int row = d->list.indexOf(item);
+            if (row >= 0) {
+                QModelIndex index = createIndex(row, 0);
+                Q_EMIT dataChanged(index, index);
+            }
+
+            // Store the new updated value
+            KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
+            KConfigGroup group(config, item->activityName());
+            if (group.isValid()) {
+                group.writeEntry("time", item->activityTime().toString(Qt::RFC2822Date));
+            }
         }
     }
 
-    m_currentTime = QTime::currentTime();
-    m_timer->start(60000);
-}
-
-void ActivityModel::stopTracking(bool stop)
-{
-    if (stop) {
-        // Add remaining seconds
-        updateCurrentActivityTime();
-        // Reset current item and stop the timer
-        resetCurrentActiveWindow();
-    } else {
-        // Start again with current active window
-        activeWindowChanged(KWindowSystem::activeWindow());
+    if (d->timeTrackingEnabled) {
+        d->currentTime = QTime::currentTime();
+        d->timer->start(60000);
     }
 }
 
-void ActivityModel::resetCurrentActiveWindow()
+void ActivityModel::updateTrackingState()
 {
-    // Reset current activity and time
-    m_currentActiveWindow = QString();
-    m_currentTime = QTime::currentTime();
-    m_timer->stop();
-}
+    if (d->timeTrackingEnabled && !d->screenLocked && !d->preparingForSleep && !d->preparingForShutdown) {
+        // Start again with current active window
+        activeWindowChanged(KWindowSystem::activeWindow());
+    } else {
+        // Add remaining seconds
+        updateCurrentActivityTime();
 
-void ActivityModel::updateItem(ActivityModelItem* item)
-{
-    const int row = m_list.indexOf(item);
-
-    if (row >= 0) {
-        QModelIndex index = createIndex(row, 0);
-        Q_EMIT dataChanged(index, index);
+        // Reset current item and stop the timer
+        d->currentActiveWindow = QString();
+        d->currentTime = QTime::currentTime();
+        d->timer->stop();
     }
 }

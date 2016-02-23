@@ -31,7 +31,7 @@
 /*                          ActivityModelItem                              *
  * ----------------------------------------------------------------------- */
 
-class Q_DECL_EXPORT ActivityModelItem : public QObject
+class ActivityModelItem : public QObject
 {
 Q_OBJECT
 public:
@@ -40,6 +40,9 @@ public:
 
     void setActivityIcon(const QPixmap& icon);
     QPixmap activityIcon() const;
+
+    void setActivityDefaultIcon(const QPixmap& icon);
+    QPixmap activityDefaultIcon() const;
 
     void setActivityName(const QString& name);
     QString activityName() const;
@@ -50,18 +53,19 @@ public:
     void addSeconds(int secs);
 
 private:
-    QPixmap m_activityIcon;
-    QString m_activityName;
-    QTime m_activityTime;
+    class Private;
+    Private *const d;
 };
 
 /*                          ActivityModel                                  *
  * ----------------------------------------------------------------------- */
 
-class Q_DECL_EXPORT ActivityModel : public QAbstractListModel
+class ActivityModel : public QAbstractListModel
 {
 Q_OBJECT
 Q_PROPERTY(bool timeTrackingEnabled READ timeTrackingEnabled WRITE setTimeTrackingEnabled NOTIFY timeTrackingEnabledChanged)
+Q_PROPERTY(bool resetOnSuspend WRITE setResetOnSuspend)
+Q_PROPERTY(bool resetOnShutdown WRITE setResetOnShutdown)
 public:
 
     explicit ActivityModel(QObject* parent = 0);
@@ -80,28 +84,26 @@ public:
     bool timeTrackingEnabled() const;
     void setTimeTrackingEnabled(bool enabled);
 
+    void setResetOnSuspend(bool reset);
+    void setResetOnShutdown(bool reset);
+
 public Q_SLOTS:
     void resetTimeStatistics();
 
 private Q_SLOTS:
     void activeWindowChanged(WId window);
     void lockscreenActivityChanged(bool active);
+    void prepareForSleepChanged(bool sleep);
+    void prepareForShutdownChanged(bool shutdown);
     void updateCurrentActivityTime();
+    void updateTrackingState();
 
 Q_SIGNALS:
     void timeTrackingEnabledChanged(bool enabled);
 
 private:
-    QList<ActivityModelItem*> m_list;
-    QString m_currentActiveWindow;
-    QTime m_currentTime;
-    QTimer* m_timer;
-    bool m_timeTrackingEnabled;
-    bool m_screenLocked;
-
-    void stopTracking(bool stop);
-    void resetCurrentActiveWindow();
-    void updateItem(ActivityModelItem* item);
+    class Private;
+    Private *const d;
 };
 
 #endif // PLASMA_TIMEKEEPER_ACTIVITY_MODEL_H

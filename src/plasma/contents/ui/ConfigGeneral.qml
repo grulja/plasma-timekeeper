@@ -18,30 +18,31 @@
  ***************************************************************************/
 
 import QtQuick 2.2
-import QtQuick.Layouts 1.1
-import org.kde.plasma.plasmoid 2.0
+import QtQuick.Controls 1.3
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.timekeeper 0.2 as PlasmaTimekeeper
 
 Item {
-    id: mainWindow
+    id: iconsPage
+    width: childrenRect.width
+    height: childrenRect.height
+    implicitWidth: pageColumn.implicitWidth
+    implicitHeight: pageColumn.implicitHeight
 
-    Plasmoid.toolTipMainText: i18n("Activity")
+    property alias cfg_reset_on_suspend: resetOnSuspendCheckbox.checked
+    property alias cfg_reset_on_shutdown: resetOnShutdownCheckbox.checked
 
-    Plasmoid.switchWidth: units.gridUnit * 12
-    Plasmoid.switchHeight: units.gridUnit * 12
+    Column {
+        id: pageColumn
+        spacing: units.smallSpacing
 
-    PlasmaTimekeeper.ActivityModel {
-        id: activityModel
-        resetOnSuspend: plasmoid.configuration.reset_on_suspend
-        resetOnShutdown: plasmoid.configuration.reset_on_shutdown
-    }
+        CheckBox {
+            id: resetOnSuspendCheckbox
+            text: i18n("Reset statistics on suspend")
+        }
 
-    Plasmoid.fullRepresentation: PopupDialog {
-        id: dialogItem
-        Layout.minimumWidth: units.iconSizes.medium * 8
-        Layout.minimumHeight: units.gridUnit * 16
-        anchors.fill: parent
-        focus: true
+        CheckBox {
+            id: resetOnShutdownCheckbox
+            text: i18n("Reset statistics on shutdown")
+        }
     }
 }

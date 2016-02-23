@@ -13,8 +13,9 @@ target_link_libraries(plasmatimekeeper_qmlplugins
     Qt5::DBus
     Qt5::Qml
     Qt5::Widgets
-    KF5::I18n
+    KF5::ConfigWidgets
     KF5::CoreAddons
+    KF5::I18n
     KF5::WindowSystem
 )
 
