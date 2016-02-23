@@ -401,7 +401,7 @@ void ActivityModel::prepareForShutdownChanged(bool shutdown)
 
     updateTrackingState();
 
-    if (d->resetOnShutdown && d->resetOnShutdown) {
+    if (d->preparingForShutdown && d->resetOnShutdown) {
         resetTimeStatistics();
     }
 }
