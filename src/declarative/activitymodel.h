@@ -88,6 +88,8 @@ public:
     void setResetOnShutdown(bool reset);
 
 public Q_SLOTS:
+    void inhibit();
+    void uninhibit();
     void resetTimeStatistics();
 
 private Q_SLOTS:

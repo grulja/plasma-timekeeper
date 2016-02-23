@@ -32,10 +32,16 @@
 #include <QDBusInterface>
 #include <QDBusPendingCall>
 #include <QDBusPendingReply>
+#include <QDBusUnixFileDescriptor>
 
 Q_DECLARE_LOGGING_CATEGORY(PLASMA_TIMEKEEPER)
 
 Q_LOGGING_CATEGORY(PLASMA_TIMEKEEPER, "plasma-timekeeper")
+
+const static QString LOGIN1_DBUS_SERVICE = QStringLiteral("org.freedesktop.login1");
+const static QString LOGIN1_DBUS_PATH = QStringLiteral("/org/freedesktop/login1");
+const static QString LOGIN1_DBUS_MANAGER_INTERFACE = QStringLiteral("org.freedesktop.login1.Manager");
+
 
 /*                     ActivityModelItem::Private                          *
  * ----------------------------------------------------------------------- */
@@ -146,6 +152,8 @@ public:
 
     // Timer
     QTimer* timer;
+
+    QDBusUnixFileDescriptor inhibitFileDescriptor;
 };
 
 /*                          ActivityModel                                  *
@@ -176,6 +184,8 @@ ActivityModel::ActivityModel(QObject* parent)
     connect(KWindowSystem::self(), &KWindowSystem::activeWindowChanged, this, &ActivityModel::activeWindowChanged, Qt::UniqueConnection);
     connect(d->timer, &QTimer::timeout, this, &ActivityModel::updateCurrentActivityTime);
 
+    // TODO check if logind is running
+
     QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.ksmserver"),
                                           QStringLiteral("/ScreenSaver"),
                                           QStringLiteral("org.freedesktop.ScreenSaver"),
@@ -183,19 +193,20 @@ ActivityModel::ActivityModel(QObject* parent)
                                           this,
                                           SLOT(lockscreenActivityChanged(bool)));
 
-    QDBusConnection::systemBus().connect(QStringLiteral("org.freedesktop.login1"),
-                                         QStringLiteral("/org/freedesktop/login1"),
-                                         QStringLiteral("org.freedesktop.login1.Manager"),
+    QDBusConnection::systemBus().connect(LOGIN1_DBUS_SERVICE,
+                                         LOGIN1_DBUS_PATH,
+                                         LOGIN1_DBUS_MANAGER_INTERFACE,
                                          QStringLiteral("PrepareForSleep"),
                                          this,
                                          SLOT(prepareForSleepChanged(bool)));
 
-    QDBusConnection::systemBus().connect(QStringLiteral("org.freedesktop.login1"),
-                                         QStringLiteral("/org/freedesktop/login1"),
-                                         QStringLiteral("org.freedesktop.login1.Manager"),
+    QDBusConnection::systemBus().connect(LOGIN1_DBUS_SERVICE,
+                                         LOGIN1_DBUS_PATH,
+                                         LOGIN1_DBUS_MANAGER_INTERFACE,
                                          QStringLiteral("PrepareForShutdown"),
                                          this,
                                          SLOT(prepareForShutdownChanged(bool)));
+    inhibit();
 
     // Load previous values
     KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
@@ -283,13 +294,50 @@ void ActivityModel::setTimeTrackingEnabled(bool enabled)
 
 void ActivityModel::setResetOnSuspend(bool reset)
 {
-    qCDebug(PLASMA_TIMEKEEPER) << "Reset on suspend " << reset;
     d->resetOnSuspend = reset;
 }
 
 void ActivityModel::setResetOnShutdown(bool reset)
 {
     d->resetOnShutdown = reset;
+}
+
+void ActivityModel::inhibit()
+{
+    if (d->inhibitFileDescriptor.isValid()) {
+        return;
+    }
+
+    QDBusMessage message = QDBusMessage::createMethodCall(LOGIN1_DBUS_SERVICE,
+                                                          LOGIN1_DBUS_PATH,
+                                                          LOGIN1_DBUS_MANAGER_INTERFACE,
+                                                          QStringLiteral("Inhibit"));
+
+    message.setArguments(QVariantList({QStringLiteral("shutdown:sleep"),
+                         i18n("Plasma Timekeeper"),
+                         i18n("Ensuring that the statistics get reseted on suspend or shutdown"),
+                         QStringLiteral("delay")}));
+    QDBusPendingReply<QDBusUnixFileDescriptor> reply = QDBusConnection::systemBus().asyncCall(message);
+    QDBusPendingCallWatcher *inhibitWatcher = new QDBusPendingCallWatcher(reply, this);
+    connect(inhibitWatcher, &QDBusPendingCallWatcher::finished, this,
+        [this](QDBusPendingCallWatcher *self) {
+            QDBusPendingReply<QDBusUnixFileDescriptor> reply = *self;
+            self->deleteLater();
+            if (!reply.isValid()) {
+                return;
+            }
+            reply.value().swap(d->inhibitFileDescriptor);
+        }
+    );
+}
+
+void ActivityModel::uninhibit()
+{
+    if (!d->inhibitFileDescriptor.isValid()) {
+        return;
+    }
+
+    d->inhibitFileDescriptor = QDBusUnixFileDescriptor();
 }
 
 void ActivityModel::resetTimeStatistics()
@@ -393,17 +441,32 @@ void ActivityModel::prepareForSleepChanged(bool sleep)
     if (d->preparingForSleep && d->resetOnSuspend) {
         resetTimeStatistics();
     }
+
+    if (d->preparingForSleep) {
+        uninhibit();
+    } else {
+        // Inhibit again to be sure that the next suspend will also reset and update the stats
+        inhibit();
+    }
 }
 
 void ActivityModel::prepareForShutdownChanged(bool shutdown)
 {
+    // NOTE
+    // Might not work when rebooting/turning of the computer from kickoff in Plasma
+    // See https://quickgit.kde.org/?p=plasma-workspace.git&a=commit&h=b5e814a7b2867914327c889794b1088027aaafd6
+
     d->preparingForShutdown = shutdown;
 
     updateTrackingState();
 
     if (d->preparingForShutdown && d->resetOnShutdown) {
         resetTimeStatistics();
+        uninhibit();
     }
+
+    // Probably no reason to start the inhibitor again as the applet will
+    // be reloaded completely with already running inhibitor
 }
 
 void ActivityModel::updateCurrentActivityTime()

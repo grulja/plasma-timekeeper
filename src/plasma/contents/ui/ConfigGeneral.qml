@@ -37,12 +37,12 @@ Item {
 
         CheckBox {
             id: resetOnSuspendCheckbox
-            text: i18n("Reset statistics on suspend")
+            text: i18n("Reset the statistics on suspend/hibernation")
         }
 
         CheckBox {
             id: resetOnShutdownCheckbox
-            text: i18n("Reset statistics on shutdown")
+            text: i18n("Reset the statistics on shutdown/restart")
         }
     }
 }
