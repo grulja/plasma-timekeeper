@@ -26,8 +26,9 @@ import org.kde.plasma.timekeeper 0.2 as PlasmaTimekeeper
 Item {
     id: mainWindow
 
-    Plasmoid.toolTipMainText: i18n("Activity")
-
+    Plasmoid.icon: "utilities-system-monitor"
+    Plasmoid.toolTipMainText: activityModel.currentActivityName
+    Plasmoid.toolTipSubText:  activityModel.currentActivityTime
     Plasmoid.switchWidth: units.gridUnit * 12
     Plasmoid.switchHeight: units.gridUnit * 12
 
@@ -37,11 +38,11 @@ Item {
         resetOnShutdown: plasmoid.configuration.reset_on_shutdown
     }
 
-    Plasmoid.fullRepresentation: PopupDialog {
-        id: dialogItem
-        Layout.minimumWidth: units.iconSizes.medium * 8
-        Layout.minimumHeight: units.gridUnit * 16
-        anchors.fill: parent
-        focus: true
+    PlasmaTimekeeper.ActivitySortModel {
+        id: activitySortModel
+        sourceModel: activityModel
     }
+
+    Plasmoid.compactRepresentation: CompactRepresentation { }
+    Plasmoid.fullRepresentation: PopupDialog { }
 }

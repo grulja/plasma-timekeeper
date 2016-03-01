@@ -280,6 +280,47 @@ QHash< int, QByteArray > ActivityModel::roleNames() const
     return roles;
 }
 
+QPixmap ActivityModel::currentActivityIcon() const
+{
+    if (d->currentActiveWindow.isEmpty()) {
+        return QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64));
+    }
+
+    QList<ActivityModelItem*>::iterator it;
+    for (it = d->list.begin(); it != d->list.end(); ++it) {
+        if ((*it)->activityName() == d->currentActiveWindow) {
+            return (*it)->activityIcon().isNull() ? (*it)->activityDefaultIcon() : (*it)->activityIcon();
+        }
+    }
+
+    return QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64));
+}
+
+QString ActivityModel::currentActivityName() const
+{
+    if (d->currentActiveWindow.isEmpty()) {
+        return i18n("No active window");
+    }
+
+    return d->currentActiveWindow;
+}
+
+QString ActivityModel::currentActivityTime() const
+{
+    if (d->currentActiveWindow.isEmpty()) {
+        return QString();
+    }
+
+    QList<ActivityModelItem*>::iterator it;
+    for (it = d->list.begin(); it != d->list.end(); ++it) {
+        if ((*it)->activityName() == d->currentActiveWindow) {
+            return (*it)->activityTime().toString(Qt::RFC2822Date);
+        }
+    }
+
+    return QString();
+}
+
 bool ActivityModel::timeTrackingEnabled() const
 {
     return d->timeTrackingEnabled;
@@ -359,6 +400,7 @@ void ActivityModel::resetTimeStatistics()
     // Reset current item
     d->currentActiveWindow = QString();
     d->currentTime = QTime::currentTime();
+    Q_EMIT currentActivityChanged();
 
     // If time tracking is not enabled we don't need to start it again
     if (d->timeTrackingEnabled) {
@@ -423,6 +465,7 @@ void ActivityModel::activeWindowChanged(WId window)
     // Save current time and activity
     d->currentActiveWindow = info.windowClassName();
     d->currentTime = QTime::currentTime();
+    Q_EMIT currentActivityChanged();
 }
 
 void ActivityModel::lockscreenActivityChanged(bool active)

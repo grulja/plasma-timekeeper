@@ -18,18 +18,18 @@
  ***************************************************************************/
 
 import QtQuick 2.2
+import QtQuick.Layouts 1.1
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.plasma.components 2.0 as PlasmaComponents
 import org.kde.plasma.timekeeper 0.2 as PlasmaTimekeeper
 
-FocusScope {
+Item {
+    id: fullRepresentation
 
-    PlasmaTimekeeper.ActivitySortModel {
-        id: activitySortModel
-        sourceModel: activityModel
-    }
+    Layout.minimumWidth: units.gridUnit * 12
+    Layout.minimumHeight: units.gridUnit * 12
 
     PlasmaExtras.ScrollArea {
         id: connectionScrollView

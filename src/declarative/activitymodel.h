@@ -63,6 +63,9 @@ private:
 class ActivityModel : public QAbstractListModel
 {
 Q_OBJECT
+Q_PROPERTY(QPixmap currentActivityIcon READ currentActivityIcon NOTIFY currentActivityChanged)
+Q_PROPERTY(QString currentActivityName READ currentActivityName NOTIFY currentActivityChanged)
+Q_PROPERTY(QString currentActivityTime READ currentActivityTime NOTIFY currentActivityChanged)
 Q_PROPERTY(bool timeTrackingEnabled READ timeTrackingEnabled WRITE setTimeTrackingEnabled NOTIFY timeTrackingEnabledChanged)
 Q_PROPERTY(bool resetOnSuspend WRITE setResetOnSuspend)
 Q_PROPERTY(bool resetOnShutdown WRITE setResetOnShutdown)
@@ -80,6 +83,10 @@ public:
     int rowCount(const QModelIndex& parent) const Q_DECL_OVERRIDE;
     QVariant data(const QModelIndex& index, int role) const Q_DECL_OVERRIDE;
     virtual QHash< int, QByteArray > roleNames() const Q_DECL_OVERRIDE;
+
+    QPixmap currentActivityIcon() const;
+    QString currentActivityName() const;
+    QString currentActivityTime() const;
 
     bool timeTrackingEnabled() const;
     void setTimeTrackingEnabled(bool enabled);
@@ -101,6 +108,7 @@ private Q_SLOTS:
     void updateTrackingState();
 
 Q_SIGNALS:
+    void currentActivityChanged();
     void timeTrackingEnabledChanged(bool enabled);
 
 private:
