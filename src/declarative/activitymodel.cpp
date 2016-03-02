@@ -533,6 +533,8 @@ void ActivityModel::updateCurrentActivityTime()
         }
     }
 
+    Q_EMIT currentActivityChanged();
+
     if (d->timeTrackingEnabled) {
         d->currentTime = QTime::currentTime();
         d->timer->start(60000);
