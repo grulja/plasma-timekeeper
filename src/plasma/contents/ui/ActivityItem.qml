@@ -50,6 +50,7 @@ PlasmaComponents.ListItem {
         }
         height: paintedHeight
         elide: Text.ElideRight
+        font.weight: ActivityName == activityModel.currentActivityName ? Font.DemiBold : Font.Normal
         text: ActivityName
     }
 
