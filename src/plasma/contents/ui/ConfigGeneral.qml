@@ -31,18 +31,32 @@ Item {
     property alias cfg_reset_on_suspend: resetOnSuspendCheckbox.checked
     property alias cfg_reset_on_shutdown: resetOnShutdownCheckbox.checked
 
+    Label {
+        id: label
+        anchors {
+            left: parent.left
+            top: parent.top
+        }
+        text: i18n("Reset statistics:")
+    }
+
     Column {
         id: pageColumn
+        anchors {
+            left: parent.left
+            top: label.bottom
+            topMargin: Math.round(units.gridUnit / 3)
+        }
         spacing: units.smallSpacing
 
         CheckBox {
             id: resetOnSuspendCheckbox
-            text: i18n("Reset the statistics on suspend/hibernation")
+            text: i18n("On suspend or hibernation")
         }
 
         CheckBox {
             id: resetOnShutdownCheckbox
-            text: i18n("Reset the statistics on shutdown/restart")
+            text: i18n("On shutdown or restart")
         }
     }
 }
