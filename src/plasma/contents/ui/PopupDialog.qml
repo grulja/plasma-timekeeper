@@ -35,7 +35,7 @@ Item {
         id: connectionScrollView
 
         anchors {
-            bottom: enableTrackingButton.top
+            bottom: buttonRow.top
             bottomMargin: Math.round(units.gridUnit / 3)
             left: parent.left
             right: parent.right
@@ -53,46 +53,35 @@ Item {
         }
     }
 
-    PlasmaComponents.Button {
-        id: enableTrackingButton
-
-        property bool timeTrackingEnabled: activityModel.timeTrackingEnabled
+    Row {
+        id: buttonRow
 
         anchors {
             bottom: parent.bottom
-            bottomMargin: Math.round(units.gridUnit / 3)
-            left: parent.left
-            leftMargin: Math.round(units.gridUnit / 3)
+            horizontalCenter: parent.horizontalCenter
         }
-        width: parent.width / 2
+        spacing: units.smallSpacing
 
-        iconSource: timeTrackingEnabled ? "media-playback-stop" : "media-record"
-        text: timeTrackingEnabled ? i18n("Stop time tracking") : i18n("Start time tracking")
+        PlasmaComponents.Button {
+            id: enableTrackingButton
+            property bool timeTrackingEnabled: activityModel.timeTrackingEnabled
+            iconSource: timeTrackingEnabled ? "media-playback-stop" : "media-record"
+            text: timeTrackingEnabled ? i18n("Stop") : i18n("Start")
 
-        onClicked: {
-            timeTrackingEnabled = !timeTrackingEnabled
-            activityModel.timeTrackingEnabled = timeTrackingEnabled
+            onClicked: {
+                timeTrackingEnabled = !timeTrackingEnabled
+                activityModel.timeTrackingEnabled = timeTrackingEnabled
+            }
         }
-    }
 
-    PlasmaComponents.Button {
-        id: resetTrackingButton
+        PlasmaComponents.Button {
+            id: resetTrackingButton
+            iconSource: "view-refresh"
+            text: i18n("Reset")
 
-        anchors {
-            bottom: parent.bottom
-            bottomMargin: Math.round(units.gridUnit / 3)
-            left: enableTrackingButton.right
-            leftMargin: Math.round(units.gridUnit / 3)
-            right: parent.right
-            rightMargin: Math.round(units.gridUnit / 3)
-        }
-        width: parent.width / 2
-
-        iconSource: "view-refresh"
-        text: i18n("Reset")
-
-        onClicked: {
-            activityModel.resetTimeStatistics()
+            onClicked: {
+                activityModel.resetTimeStatistics()
+            }
         }
     }
 }
