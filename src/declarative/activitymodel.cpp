@@ -211,13 +211,13 @@ ActivityModel::ActivityModel(QObject* parent)
     // Load previous values
     KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
     Q_FOREACH (const QString& groupName, config->groupList()) {
-        // Ignore the general group
-        if (groupName == QLatin1String("general")) {
-            continue;
-        }
-
         KConfigGroup group(config, groupName);
         if (group.isValid()) {
+            if (groupName == QLatin1String("general")) {
+                d->timeTrackingEnabled = group.readEntry<bool>("trackingEnabled", false);
+                continue;
+            }
+
             ActivityModelItem *item = new ActivityModelItem();
             item->setActivityName(groupName);
             item->setActivityDefaultIcon(QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64)));
@@ -331,6 +331,12 @@ void ActivityModel::setTimeTrackingEnabled(bool enabled)
     d->timeTrackingEnabled = enabled;
 
     updateTrackingState();
+
+    KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
+    KConfigGroup group(config, "general");
+    if (group.isValid()) {
+        group.writeEntry<bool>("trackingEnabled", enabled);
+    }
 }
 
 void ActivityModel::setResetOnSuspend(bool reset)
