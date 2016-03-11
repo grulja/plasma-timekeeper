@@ -286,8 +286,8 @@ QPixmap ActivityModel::currentActivityIcon() const
         return QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64));
     }
 
-    QList<ActivityModelItem*>::iterator it;
-    for (it = d->list.begin(); it != d->list.end(); ++it) {
+    QList<ActivityModelItem*>::const_iterator it;
+    for (it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
         if ((*it)->activityName() == d->currentActiveWindow) {
             return (*it)->activityIcon().isNull() ? (*it)->activityDefaultIcon() : (*it)->activityIcon();
         }
@@ -311,8 +311,8 @@ QString ActivityModel::currentActivityTime() const
         return QString();
     }
 
-    QList<ActivityModelItem*>::iterator it;
-    for (it = d->list.begin(); it != d->list.end(); ++it) {
+    QList<ActivityModelItem*>::const_iterator it;
+    for (it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
         if ((*it)->activityName() == d->currentActiveWindow) {
             return (*it)->activityTime().toString(Qt::RFC2822Date);
         }
@@ -430,8 +430,8 @@ void ActivityModel::activeWindowChanged(WId window)
     }
 
     // Find if the activity already exists and if not add it to the model
-    QList<ActivityModelItem*>::iterator it;
-    for (it = d->list.begin(); it != d->list.end(); ++it) {
+    QList<ActivityModelItem*>::const_iterator it;
+    for (it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
         if ((*it)->activityName() == info.windowClassName()) {
             break;
         }
