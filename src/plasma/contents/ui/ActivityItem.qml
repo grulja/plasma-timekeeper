@@ -81,6 +81,7 @@ PlasmaComponents.ListItem {
             verticalCenter: parent.verticalCenter
         }
         iconSource: "list-remove"
+        tooltip: i18n("Stop monitoring this activity")
         visible: activityItem.containsMouse
 
         onClicked: {
