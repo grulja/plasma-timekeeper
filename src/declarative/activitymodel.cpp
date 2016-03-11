@@ -462,6 +462,9 @@ void ActivityModel::activeWindowChanged(WId window)
         return;
     }
 
+    // Process the current activity
+    updateCurrentActivityTime();
+
     if (!d->timeTrackingEnabled || d->ignoredActivitiesList.contains(info.windowClassName())) {
         // Reset current item
         d->currentActiveWindow = QString();
@@ -498,9 +501,6 @@ void ActivityModel::activeWindowChanged(WId window)
             Q_EMIT dataChanged(index, index);
         }
     }
-
-    // Process the current activity
-    updateCurrentActivityTime();
 
     // Process the next activity
     if (!d->timeTrackingEnabled && !d->screenLocked) {
