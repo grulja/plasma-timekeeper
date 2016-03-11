@@ -1,0 +1,4 @@
+1) Fix reseting of statistics on shutdown/restart from kickoff
+   - might be related to https://quickgit.kde.org/?p=plasma-workspace.git&a=commit&h=b5e814a7b2867914327c889794b1088027aaafd6
+2) Allow to customize the update interval
+3) Allow to add an ignored activity back to be monitored again (+ UI configuration)
