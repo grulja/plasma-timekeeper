@@ -26,6 +26,8 @@ PlasmaComponents.ListItem {
     id: activityItem
 
     enabled: true
+    checked: activityItem.containsMouse
+    height: activityName.height + activityTime.height + Math.round(units.gridUnit / 2)
 
     KQuickControlsAddons.QPixmapItem {
         id: activityIcon
@@ -36,7 +38,7 @@ PlasmaComponents.ListItem {
             verticalCenter: parent.verticalCenter
         }
         pixmap: ActivityIcon
-        height: units.iconSizes.medium; width: height
+        height: parent.height; width: height
     }
 
     PlasmaComponents.Label {
@@ -46,7 +48,7 @@ PlasmaComponents.ListItem {
             bottom: activityIcon.verticalCenter
             left: activityIcon.right
             leftMargin: Math.round(units.gridUnit / 2)
-            right: parent.right
+            right: ignoreActivityButton.left
         }
         height: paintedHeight
         elide: Text.ElideRight
@@ -60,7 +62,7 @@ PlasmaComponents.ListItem {
         anchors {
             left: activityIcon.right
             leftMargin: Math.round(units.gridUnit / 2)
-            right: parent.right
+            right: ignoreActivityButton.left
             top: activityName.bottom
         }
         height: paintedHeight
@@ -68,5 +70,21 @@ PlasmaComponents.ListItem {
         font.pointSize: theme.smallestFont.pointSize
         opacity: 0.6
         text: ActivityTime
+    }
+
+    PlasmaComponents.ToolButton {
+        id: ignoreActivityButton
+
+        anchors {
+            right: parent.right
+            rightMargin: Math.round(units.gridUnit / 3)
+            verticalCenter: parent.verticalCenter
+        }
+        iconSource: "list-remove"
+        visible: activityItem.containsMouse
+
+        onClicked: {
+            activityModel.ignoreActivity(ActivityName)
+        }
     }
 }

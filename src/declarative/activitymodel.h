@@ -88,6 +88,7 @@ public:
     QString currentActivityName() const;
     QString currentActivityTime() const;
 
+
     bool timeTrackingEnabled() const;
     void setTimeTrackingEnabled(bool enabled);
 
@@ -95,6 +96,7 @@ public:
     void setResetOnShutdown(bool reset);
 
 public Q_SLOTS:
+    void ignoreActivity(const QString& activityName);
     void inhibit();
     void uninhibit();
     void resetTimeStatistics();

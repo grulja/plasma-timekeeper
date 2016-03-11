@@ -150,6 +150,9 @@ public:
     // List of activities
     QList<ActivityModelItem*> list;
 
+    // List of ignored activities
+    QStringList ignoredActivitiesList;
+
     // Timer
     QTimer* timer;
 
@@ -215,6 +218,7 @@ ActivityModel::ActivityModel(QObject* parent)
         if (group.isValid()) {
             if (groupName == QLatin1String("general")) {
                 d->timeTrackingEnabled = group.readEntry<bool>("trackingEnabled", false);
+                d->ignoredActivitiesList = group.readEntry<QStringList>("ignoredActivities", QStringList());
                 continue;
             }
 
@@ -349,6 +353,40 @@ void ActivityModel::setResetOnShutdown(bool reset)
     d->resetOnShutdown = reset;
 }
 
+void ActivityModel::ignoreActivity(const QString& activityName)
+{
+    if (!d->ignoredActivitiesList.contains(activityName)) {
+        d->ignoredActivitiesList.append(activityName);
+
+        KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
+        KConfigGroup group(config, "general");
+        if (group.isValid()) {
+            group.writeEntry<QStringList>("ignoredActivities", d->ignoredActivitiesList);
+        }
+
+        Q_FOREACH (ActivityModelItem* item, d->list) {
+            if (item->activityName() == activityName) {
+                config->deleteGroup(item->activityName());
+
+                const int row = d->list.indexOf(item);
+                if (row >= 0) {
+                    beginRemoveRows(QModelIndex(), row, row);
+                    d->list.removeAt(row);
+                    item->deleteLater();
+                    endRemoveRows();
+                }
+            }
+        }
+
+        if (d->currentActiveWindow == activityName) {
+            // Reset current item
+            d->currentActiveWindow = QString();
+            d->currentTime = QTime::currentTime();
+            Q_EMIT currentActivityChanged();
+        }
+    }
+}
+
 void ActivityModel::inhibit()
 {
     if (d->inhibitFileDescriptor.isValid()) {
@@ -424,8 +462,12 @@ void ActivityModel::activeWindowChanged(WId window)
         return;
     }
 
-    if (!d->timeTrackingEnabled) {
-        qCDebug(PLASMA_TIMEKEEPER) << "Monitoring disabled, ignoring new active window";
+    if (!d->timeTrackingEnabled || d->ignoredActivitiesList.contains(info.windowClassName())) {
+        // Reset current item
+        d->currentActiveWindow = QString();
+        d->currentTime = QTime::currentTime();
+        Q_EMIT currentActivityChanged();
+        qCDebug(PLASMA_TIMEKEEPER) << "Activity " << info.windowClassName() << " is ignored";
         return;
     }
 
@@ -437,7 +479,7 @@ void ActivityModel::activeWindowChanged(WId window)
         }
     }
 
-    if (it == d->list.end()) {
+    if (it == d->list.constEnd()) {
         qCDebug(PLASMA_TIMEKEEPER) << "Adding new activity item " << info.windowClassName();
         ActivityModelItem *item = new ActivityModelItem();
         item->setActivityName(info.windowClassName());
