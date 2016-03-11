@@ -217,7 +217,7 @@ ActivityModel::ActivityModel(QObject* parent)
         KConfigGroup group(config, groupName);
         if (group.isValid()) {
             if (groupName == QLatin1String("general")) {
-                d->timeTrackingEnabled = group.readEntry<bool>("trackingEnabled", false);
+                d->timeTrackingEnabled = group.readEntry<bool>("trackingEnabled", true);
                 d->ignoredActivitiesList = group.readEntry<QStringList>("ignoredActivities", QStringList());
                 continue;
             }
