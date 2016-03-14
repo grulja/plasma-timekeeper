@@ -82,7 +82,7 @@ PlasmaComponents.ListItem {
         }
         iconSource: "list-remove"
         tooltip: i18n("Stop monitoring this activity")
-        opacity: activityList.currentVisibleButtonIndex == index ? 1 : 0
+        opacity: activityList.currentVisibleButtonIndex == index && ActivityName != i18n("other applications") ? 1 : 0
         visible: opacity != 0
 
         onClicked: {

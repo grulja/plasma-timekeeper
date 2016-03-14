@@ -20,6 +20,10 @@
 
 #include "activitysortmodel.h"
 
+#include <KLocalizedString>
+
+const static QString OTHER_APPLICATIONS_NAME = i18n("other applications");
+
 ActivitySortModel::ActivitySortModel(QObject* parent)
     : QSortFilterProxyModel(parent)
 {
@@ -39,8 +43,16 @@ bool ActivitySortModel::filterAcceptsRow(int source_row, const QModelIndex& sour
 
 bool ActivitySortModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
 {
+    const QString leftName = sourceModel()->data(left, ActivityModel::ActivityNameRole).toString();
+    const QString rightName = sourceModel()->data(right, ActivityModel::ActivityNameRole).toString();
     const QTime leftTime = sourceModel()->data(left, ActivityModel::ActivityTimeRole).toTime();
     const QTime rightTime = sourceModel()->data(right, ActivityModel::ActivityTimeRole).toTime();
+
+    if (leftName == OTHER_APPLICATIONS_NAME) {
+        return true;
+    } else if (rightName == OTHER_APPLICATIONS_NAME) {
+        return false;
+    }
 
     return leftTime < rightTime;
 }

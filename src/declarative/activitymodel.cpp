@@ -42,6 +42,7 @@ const static QString LOGIN1_DBUS_SERVICE = QStringLiteral("org.freedesktop.login
 const static QString LOGIN1_DBUS_PATH = QStringLiteral("/org/freedesktop/login1");
 const static QString LOGIN1_DBUS_MANAGER_INTERFACE = QStringLiteral("org.freedesktop.login1.Manager");
 
+const static QString OTHER_APPLICATIONS_NAME = i18n("other applications");
 
 /*                     ActivityModelItem::Private                          *
  * ----------------------------------------------------------------------- */
@@ -55,6 +56,7 @@ public:
     QPixmap activityDefaultIcon;
     QString activityName;
     QTime activityTime;
+    QString configGroup;
 };
 
 /*                          ActivityModelItem                              *
@@ -109,6 +111,16 @@ void ActivityModelItem::setActivityTime(const QTime& time)
 QTime ActivityModelItem::activityTime() const
 {
     return d->activityTime;
+}
+
+void ActivityModelItem::setConfigGroup(const QString& group)
+{
+    d->configGroup = group;
+}
+
+QString ActivityModelItem::configGroup() const
+{
+    return d->configGroup;
 }
 
 void ActivityModelItem::addSeconds(int secs)
@@ -212,20 +224,21 @@ ActivityModel::ActivityModel(QObject* parent)
     inhibit();
 
     // Load previous values
-    KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
+    KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
     Q_FOREACH (const QString& groupName, config->groupList()) {
         KConfigGroup group(config, groupName);
         if (group.isValid()) {
-            if (groupName == QLatin1String("general")) {
+            if (groupName == QStringLiteral("general")) {
                 d->timeTrackingEnabled = group.readEntry<bool>("trackingEnabled", true);
                 d->ignoredActivitiesList = group.readEntry<QStringList>("ignoredActivities", QStringList());
                 continue;
             }
 
             ActivityModelItem *item = new ActivityModelItem();
-            item->setActivityName(groupName);
-            item->setActivityDefaultIcon(QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64)));
-            item->setActivityTime(QTime::fromString(group.readEntry("time")));
+            item->setActivityName(group.readEntry(QStringLiteral("name")));
+            item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64)));
+            item->setActivityTime(QTime::fromString(group.readEntry(QStringLiteral("time"), groupName)));
+            item->setConfigGroup(groupName);
 
             const int index = d->list.count();
             beginInsertRows(QModelIndex(), index, index);
@@ -287,17 +300,16 @@ QHash< int, QByteArray > ActivityModel::roleNames() const
 QPixmap ActivityModel::currentActivityIcon() const
 {
     if (d->currentActiveWindow.isEmpty()) {
-        return QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64));
+        return QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64));
     }
 
-    QList<ActivityModelItem*>::const_iterator it;
-    for (it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
+    for (auto it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
         if ((*it)->activityName() == d->currentActiveWindow) {
             return (*it)->activityIcon().isNull() ? (*it)->activityDefaultIcon() : (*it)->activityIcon();
         }
     }
 
-    return QIcon::fromTheme(QLatin1String("xorg")).pixmap(QSize(64, 64));
+    return QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64));
 }
 
 QString ActivityModel::currentActivityName() const
@@ -315,8 +327,7 @@ QString ActivityModel::currentActivityTime() const
         return QString();
     }
 
-    QList<ActivityModelItem*>::const_iterator it;
-    for (it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
+    for (auto it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
         if ((*it)->activityName() == d->currentActiveWindow) {
             return (*it)->activityTime().toString(Qt::RFC2822Date);
         }
@@ -336,10 +347,10 @@ void ActivityModel::setTimeTrackingEnabled(bool enabled)
 
     updateTrackingState();
 
-    KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
-    KConfigGroup group(config, "general");
+    KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
+    KConfigGroup group(config, QStringLiteral("general"));
     if (group.isValid()) {
-        group.writeEntry<bool>("trackingEnabled", enabled);
+        group.writeEntry<bool>(QStringLiteral("trackingEnabled"), enabled);
     }
 }
 
@@ -358,30 +369,70 @@ void ActivityModel::ignoreActivity(const QString& activityName)
     if (!d->ignoredActivitiesList.contains(activityName)) {
         d->ignoredActivitiesList.append(activityName);
 
-        KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
-        KConfigGroup group(config, "general");
-        if (group.isValid()) {
-            group.writeEntry<QStringList>("ignoredActivities", d->ignoredActivitiesList);
+        QList<ActivityModelItem*>::const_iterator otherIt;
+        QList<ActivityModelItem*>::const_iterator ignoredActivityIt;
+
+        // Find if the "other applications" item exists
+        for (otherIt = d->list.constBegin(); otherIt != d->list.constEnd(); ++otherIt) {
+            if ((*otherIt)->activityName() == OTHER_APPLICATIONS_NAME) {
+                break;
+            }
         }
 
-        Q_FOREACH (ActivityModelItem* item, d->list) {
-            if (item->activityName() == activityName) {
-                config->deleteGroup(item->activityName());
-
-                const int row = d->list.indexOf(item);
-                if (row >= 0) {
-                    beginRemoveRows(QModelIndex(), row, row);
-                    d->list.removeAt(row);
-                    item->deleteLater();
-                    endRemoveRows();
-                }
+        // Find the item we don't want to monitor separately
+        for (ignoredActivityIt = d->list.constBegin(); ignoredActivityIt != d->list.constEnd(); ++ignoredActivityIt) {
+            if ((*ignoredActivityIt)->activityName() == activityName) {
+                break;
             }
+        }
+
+        KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
+        config->deleteGroup((*ignoredActivityIt)->configGroup());
+
+        // If "other applications" item doesn't exist, let's just rename the item we want to ignore
+        if (otherIt == d->list.constEnd()) {
+            (*ignoredActivityIt)->setActivityName(OTHER_APPLICATIONS_NAME);
+            (*ignoredActivityIt)->setActivityIcon(QPixmap());
+            (*ignoredActivityIt)->setConfigGroup(QStringLiteral("other"));
+            const int row = d->list.indexOf(((*ignoredActivityIt)));
+            if (row >= 0) {
+                QModelIndex index = createIndex(row, 0);
+                Q_EMIT dataChanged(index, index);
+            }
+        } else {
+            // Join the items together and remove the ignored activity
+            (*otherIt)->addSeconds(QTime(0,0).secsTo((*ignoredActivityIt)->activityTime()));
+            int row = d->list.indexOf((((*otherIt))));
+            if (row >= 0) {
+                QModelIndex index = createIndex(row, 0);
+                Q_EMIT dataChanged(index, index);
+            }
+
+            // Remove the ignored activity
+            row = d->list.indexOf((*ignoredActivityIt));
+            if (row >= 0) {
+                beginRemoveRows(QModelIndex(), row, row);
+                (*ignoredActivityIt)->deleteLater();
+                d->list.removeAt(row);
+                endRemoveRows();
+            }
+        }
+
+        KConfigGroup generalGroup(config, QStringLiteral("general"));
+        if (generalGroup.isValid()) {
+            generalGroup.writeEntry<QStringList>(QStringLiteral("ignoredActivities"), d->ignoredActivitiesList);
+        }
+
+       // Save it under "other" group
+        KConfigGroup otherGroup(config, "other");
+        if (otherGroup.isValid()) {
+            otherGroup.writeEntry(QStringLiteral("name"), OTHER_APPLICATIONS_NAME);
+            otherGroup.writeEntry(QStringLiteral("time"), (*ignoredActivityIt)->activityTime().toString(Qt::RFC2822Date));
         }
 
         if (d->currentActiveWindow == activityName) {
             // Reset current item
-            d->currentActiveWindow = QString();
-            d->currentTime = QTime::currentTime();
+            d->currentActiveWindow = OTHER_APPLICATIONS_NAME;
             Q_EMIT currentActivityChanged();
         }
     }
@@ -427,16 +478,16 @@ void ActivityModel::uninhibit()
 
 void ActivityModel::resetTimeStatistics()
 {
-    KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
+    KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
 
     Q_FOREACH (ActivityModelItem* item, d->list) {
-        config->deleteGroup(item->activityName());
+        config->deleteGroup(item->configGroup());
 
         const int row = d->list.indexOf(item);
         if (row >= 0) {
             beginRemoveRows(QModelIndex(), row, row);
-            d->list.removeAt(row);
             item->deleteLater();
+            d->list.removeAt(row);
             endRemoveRows();
         }
     }
@@ -455,6 +506,8 @@ void ActivityModel::resetTimeStatistics()
 void ActivityModel::activeWindowChanged(WId window)
 {
     KWindowInfo info = KWindowInfo(window, NET::WMName | NET::WMIconName, NET::WM2WindowClass);
+    const QString activityName = d->ignoredActivitiesList.contains(info.windowClassName()) ? OTHER_APPLICATIONS_NAME : info.windowClassName();
+    const QString configGroup = d->ignoredActivitiesList.contains(info.windowClassName()) ? QStringLiteral("other") : info.windowClassName();
 
     qCDebug(PLASMA_TIMEKEEPER) << "Active window changed to " << info.windowClassName();
 
@@ -465,29 +518,27 @@ void ActivityModel::activeWindowChanged(WId window)
     // Process the current activity
     updateCurrentActivityTime();
 
-    if (!d->timeTrackingEnabled || d->ignoredActivitiesList.contains(info.windowClassName())) {
-        // Reset current item
-        d->currentActiveWindow = QString();
-        d->currentTime = QTime::currentTime();
-        Q_EMIT currentActivityChanged();
-        qCDebug(PLASMA_TIMEKEEPER) << "Activity " << info.windowClassName() << " is ignored";
+    if (!d->timeTrackingEnabled) {
+        qCDebug(PLASMA_TIMEKEEPER) << "Monitoring is disabled";
         return;
     }
 
     // Find if the activity already exists and if not add it to the model
     QList<ActivityModelItem*>::const_iterator it;
     for (it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
-        if ((*it)->activityName() == info.windowClassName()) {
+        if ((*it)->activityName() == activityName) {
             break;
         }
     }
 
     if (it == d->list.constEnd()) {
-        qCDebug(PLASMA_TIMEKEEPER) << "Adding new activity item " << info.windowClassName();
+        qCDebug(PLASMA_TIMEKEEPER) << "Adding new activity item " << activityName;
         ActivityModelItem *item = new ActivityModelItem();
-        item->setActivityName(info.windowClassName());
+        item->setActivityName(activityName);
+        item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64)));
         item->setActivityIcon(KWindowSystem::icon(window, 64, 64, true));
         item->setActivityTime(QTime(0, 0, 0));
+        item->setConfigGroup(configGroup);
 
         const int index = d->list.count();
         beginInsertRows(QModelIndex(), index, index);
@@ -511,7 +562,7 @@ void ActivityModel::activeWindowChanged(WId window)
     }
 
     // Save current time and activity
-    d->currentActiveWindow = info.windowClassName();
+    d->currentActiveWindow = activityName;
     d->currentTime = QTime::currentTime();
     Q_EMIT currentActivityChanged();
 }
@@ -573,10 +624,13 @@ void ActivityModel::updateCurrentActivityTime()
             }
 
             // Store the new updated value
-            KSharedConfigPtr config = KSharedConfig::openConfig(QLatin1String("plasma-timekeeper"), KConfig::SimpleConfig);
-            KConfigGroup group(config, item->activityName());
+            KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
+            KConfigGroup group(config, item->configGroup());
             if (group.isValid()) {
-                group.writeEntry("time", item->activityTime().toString(Qt::RFC2822Date));
+                if (!group.hasKey(QStringLiteral("name"))) {
+                    group.writeEntry(QStringLiteral("name"), item->activityName());
+                }
+                group.writeEntry(QStringLiteral("time"), item->activityTime().toString(Qt::RFC2822Date));
             }
         }
     }

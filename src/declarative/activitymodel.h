@@ -50,6 +50,9 @@ public:
     void setActivityTime(const QTime& time);
     QTime activityTime() const;
 
+    void setConfigGroup(const QString& group);
+    QString configGroup() const;
+
     void addSeconds(int secs);
 
 private:
