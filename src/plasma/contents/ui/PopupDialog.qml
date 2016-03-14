@@ -45,9 +45,12 @@ Item {
         ListView {
             id: activityList
 
+            property int currentVisibleButtonIndex: -1
+
             anchors.fill: parent
             clip: true
             model: activitySortModel
+            currentIndex: -1
             boundsBehavior: Flickable.StopAtBounds
             delegate: ActivityItem { }
         }

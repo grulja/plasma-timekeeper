@@ -82,10 +82,17 @@ PlasmaComponents.ListItem {
         }
         iconSource: "list-remove"
         tooltip: i18n("Stop monitoring this activity")
-        visible: activityItem.containsMouse
+        opacity: activityList.currentVisibleButtonIndex == index ? 1 : 0
+        visible: opacity != 0
 
         onClicked: {
             activityModel.ignoreActivity(ActivityName)
+        }
+    }
+
+    onContainsMouseChanged: {
+        if (activityItem.containsMouse) {
+            activityList.currentVisibleButtonIndex = index
         }
     }
 }
