@@ -300,7 +300,7 @@ QHash< int, QByteArray > ActivityModel::roleNames() const
 QPixmap ActivityModel::currentActivityIcon() const
 {
     if (d->currentActiveWindow.isEmpty()) {
-        return QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64));
+        return QIcon::fromTheme(QStringLiteral("plasma")).pixmap(QSize(64, 64));
     }
 
     for (auto it = d->list.constBegin(); it != d->list.constEnd(); ++it) {
@@ -309,7 +309,7 @@ QPixmap ActivityModel::currentActivityIcon() const
         }
     }
 
-    return QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64));
+    return QIcon::fromTheme(QStringLiteral("plasma")).pixmap(QSize(64, 64));
 }
 
 QString ActivityModel::currentActivityName() const
@@ -535,7 +535,7 @@ void ActivityModel::activeWindowChanged(WId window)
         qCDebug(PLASMA_TIMEKEEPER) << "Adding new activity item " << activityName;
         ActivityModelItem *item = new ActivityModelItem();
         item->setActivityName(activityName);
-        item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64)));
+        item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("plasma")).pixmap(QSize(64, 64)));
         item->setActivityIcon(KWindowSystem::icon(window, 64, 64, true));
         item->setActivityTime(QTime(0, 0, 0));
         item->setConfigGroup(configGroup);
