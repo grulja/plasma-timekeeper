@@ -236,7 +236,7 @@ ActivityModel::ActivityModel(QObject* parent)
 
             ActivityModelItem *item = new ActivityModelItem();
             item->setActivityName(group.readEntry(QStringLiteral("name")));
-            item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("xorg")).pixmap(QSize(64, 64)));
+            item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("plasma")).pixmap(QSize(64, 64)));
             item->setActivityTime(QTime::fromString(group.readEntry(QStringLiteral("time"), groupName)));
             item->setConfigGroup(groupName);
 
@@ -544,7 +544,7 @@ void ActivityModel::activeWindowChanged(WId window)
         beginInsertRows(QModelIndex(), index, index);
         d->list << item;
         endInsertRows();
-    } else if ((*it)->activityIcon().isNull()) { // Update icon to avoid using the default one
+    } else if ((*it)->activityIcon().isNull() && activityName != OTHER_APPLICATIONS_NAME) { // Update icon to avoid using the default one
         (*it)->setActivityIcon(KWindowSystem::icon(window, 64, 64, true));
         const int row = d->list.indexOf((*it));
         if (row >= 0) {
