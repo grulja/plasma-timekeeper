@@ -50,6 +50,7 @@ class ActivityModelItem::Private
 {
 public:
     Private()
+        : percentualUsage(0)
     { }
 
     QPixmap activityIcon;
@@ -57,6 +58,7 @@ public:
     QString activityName;
     QTime activityTime;
     QString configGroup;
+    int percentualUsage;
 };
 
 /*                          ActivityModelItem                              *
@@ -121,6 +123,16 @@ void ActivityModelItem::setConfigGroup(const QString& group)
 QString ActivityModelItem::configGroup() const
 {
     return d->configGroup;
+}
+
+void ActivityModelItem::setPercentualUsage(int percentualUsage)
+{
+    d->percentualUsage = percentualUsage;
+}
+
+int ActivityModelItem::percentualUsage() const
+{
+    return d->percentualUsage;
 }
 
 void ActivityModelItem::addSeconds(int secs)
@@ -273,6 +285,9 @@ QVariant ActivityModel::data(const QModelIndex& index, int role) const
             case ActivityTimeRole:
                 return item->activityTime().toString(Qt::RFC2822Date);
                 break;
+            case ActivityPercentualUsage:
+                return item->percentualUsage();
+                break;
             default:
                 break;
         }
@@ -293,6 +308,7 @@ QHash< int, QByteArray > ActivityModel::roleNames() const
     roles[ActivityIconRole] = "ActivityIcon";
     roles[ActivityNameRole] = "ActivityName";
     roles[ActivityTimeRole] = "ActivityTime";
+    roles[ActivityPercentualUsage] = "ActivityPercentualUsage";
 
     return roles;
 }
@@ -613,15 +629,13 @@ void ActivityModel::prepareForShutdownChanged(bool shutdown)
 
 void ActivityModel::updateCurrentActivityTime()
 {
-    Q_FOREACH (ActivityModelItem * item, d->list) {
+    QTime totalTime = QTime(0, 0);
+
+    // Get the total time + update the current item
+    Q_FOREACH (ActivityModelItem *item, d->list) {
+        // Update current activity time
         if (d->currentActiveWindow == item->activityName()) {
             item->addSeconds(d->currentTime.secsTo(QTime::currentTime()));
-
-            const int row = d->list.indexOf(item);
-            if (row >= 0) {
-                QModelIndex index = createIndex(row, 0);
-                Q_EMIT dataChanged(index, index);
-            }
 
             // Store the new updated value
             KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
@@ -632,6 +646,26 @@ void ActivityModel::updateCurrentActivityTime()
                 }
                 group.writeEntry(QStringLiteral("time"), item->activityTime().toString(Qt::RFC2822Date));
             }
+        }
+
+        totalTime = totalTime.addSecs(QTime(0, 0).secsTo(item->activityTime()));
+    }
+
+    Q_FOREACH (ActivityModelItem *item, d->list) {
+        // Update percentual usage according to the total time
+        const int totalTimeSecs = QTime(0, 0).secsTo(totalTime);
+        const int itemTimeSecs = QTime(0, 0).secsTo(item->activityTime());
+
+        if (totalTimeSecs && itemTimeSecs) {
+            item->setPercentualUsage((double) itemTimeSecs / ((double) totalTimeSecs / (double) 100));
+        } else {
+            item->setPercentualUsage(0);
+        }
+
+        const int row = d->list.indexOf(item);
+        if (row >= 0) {
+            QModelIndex index = createIndex(row, 0);
+            Q_EMIT dataChanged(index, index);
         }
     }
 

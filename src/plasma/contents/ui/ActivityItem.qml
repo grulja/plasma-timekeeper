@@ -69,7 +69,7 @@ PlasmaComponents.ListItem {
         elide: Text.ElideRight
         font.pointSize: theme.smallestFont.pointSize
         opacity: 0.6
-        text: ActivityTime
+        text: i18n("%1 (%2%)", ActivityTime, ActivityPercentualUsage)
     }
 
     PlasmaComponents.ToolButton {

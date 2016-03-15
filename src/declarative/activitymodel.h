@@ -53,6 +53,9 @@ public:
     void setConfigGroup(const QString& group);
     QString configGroup() const;
 
+    void setPercentualUsage(int percentualUsage);
+    int percentualUsage() const;
+
     void addSeconds(int secs);
 
 private:
@@ -80,7 +83,8 @@ public:
     enum ItemRole {
         ActivityIconRole = Qt::UserRole + 1,
         ActivityNameRole,
-        ActivityTimeRole
+        ActivityTimeRole,
+        ActivityPercentualUsage
     };
 
     int rowCount(const QModelIndex& parent) const Q_DECL_OVERRIDE;
@@ -90,7 +94,6 @@ public:
     QPixmap currentActivityIcon() const;
     QString currentActivityName() const;
     QString currentActivityTime() const;
-
 
     bool timeTrackingEnabled() const;
     void setTimeTrackingEnabled(bool enabled);
