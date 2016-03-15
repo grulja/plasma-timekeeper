@@ -5,7 +5,7 @@ Author: Jan Grulich &lt;jgrulich@redhat.com&gt;
 
 Released under GPL 2.0+
 
-How to install
+How to compile
 -------------------------------
   mkdir build <br/>
   cd build <br/>
@@ -14,4 +14,12 @@ How to install
   make <br/>
   # As root: <br/>
   make install <br/>
+  
+  
+Distributions
+------------------------------
+If you don't think that compilication is a good option for you, you can try to ask your distribution packagers to include it in official repositories.
+
+List of distributions providing plasma-timekeeper in their repositories: <br>
+<b>Archlinux</b> - https://aur.archlinux.org/packages/plasma5-applets-timekeeper-git/ <br>
 
