@@ -20,6 +20,6 @@ Distributions
 ------------------------------
 If you don't think that compilication is a good option for you, you can try to ask your distribution packagers to include it in official repositories.
 
-List of distributions providing plasma-timekeeper in their repositories: <br>
-<b>Archlinux</b> - https://aur.archlinux.org/packages/plasma5-applets-timekeeper-git/ <br>
-
+List of distributions providing plasma-timekeeper in their repositories: <br/>
+<b>Archlinux</b> - https://aur.archlinux.org/packages/plasma5-applets-timekeeper-git/ <br/>
+<b>Fedora</b> - Use "dnf copr enable @kdesig/plasma-timekeeper" and then "dnf install plasma-timekeeper" <br/>
