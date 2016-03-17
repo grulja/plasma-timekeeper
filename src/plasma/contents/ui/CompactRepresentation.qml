@@ -27,7 +27,9 @@ import org.kde.kquickcontrolsaddons 2.0 as KQuickControlsAddons
 Item {
     id: compactRepresentation
 
-    Layout.minimumWidth: units.gridUnit * 8
+    property bool horizontalLayout: currentActivityName.height + currentActivityTime.height > parent.height
+
+    Layout.minimumWidth: horizontalLayout ? units.gridUnit * 12 : units.gridUnit * 8
     Layout.minimumHeight: units.iconSizes.small
 
     KQuickControlsAddons.QPixmapItem {
@@ -47,13 +49,7 @@ Item {
 
     PlasmaComponents.Label {
         id: currentActivityName
-
-        anchors {
-            bottom: currentActivityIcon.verticalCenter
-            left: currentActivityIcon.right
-            leftMargin: units.smallSpacing
-            right: parent.right
-        }
+        anchors.leftMargin: units.smallSpacing
         height: paintedHeight
         elide: Text.ElideRight
         text: activityModel.currentActivityName
@@ -61,13 +57,7 @@ Item {
 
     PlasmaComponents.Label {
         id: currentActivityTime
-
-        anchors {
-            left: currentActivityIcon.right
-            leftMargin: units.smallSpacing
-            right: parent.right
-            top: currentActivityName.bottom
-        }
+        anchors.leftMargin: units.smallSpacing
         height: paintedHeight
         elide: Text.ElideRight
         font.pointSize: theme.smallestFont.pointSize
@@ -75,9 +65,65 @@ Item {
         text: activityModel.currentActivityTime
     }
 
+    PlasmaCore.SvgItem {
+        id: separator
+
+        anchors {
+            bottom: parent.bottom
+            right: currentActivityTime.left
+            rightMargin: units.smallSpacing
+            top: parent.top
+        }
+        visible: horizontalLayout
+        width: lineSvg.elementSize("vertical-line").width; height: parent.height
+        elementId: "vertical-line"
+        svg: PlasmaCore.Svg { id: lineSvg; imagePath: "widgets/line" }
+    }
+
     MouseArea {
         id: mouseArea
         anchors.fill: parent
         onClicked: plasmoid.expanded = !plasmoid.expanded
     }
+
+    states: [
+        State {
+            name: "horizontalLayout"
+            when: horizontalLayout
+            AnchorChanges {
+                target: currentActivityName
+                anchors.bottom: undefined
+                anchors.left: currentActivityIcon.right
+                anchors.right: separator.left
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            AnchorChanges {
+                target: currentActivityTime
+                anchors.left: undefined
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        },
+
+        State {
+            name: "verticalLayout"
+            when: !horizontalLayout
+            AnchorChanges {
+                target: currentActivityName
+                anchors.bottom: currentActivityIcon.verticalCenter
+                anchors.left: currentActivityIcon.right
+                anchors.right: parent.right
+                anchors.verticalCenter: undefined
+            }
+
+            AnchorChanges {
+                target: currentActivityTime
+                anchors.left: currentActivityIcon.right
+                anchors.right: parent.right
+                anchors.top: currentActivityName.bottom
+                anchors.verticalCenter: undefined
+            }
+        }
+    ]
 }
