@@ -9,8 +9,7 @@ How to compile
 -------------------------------
   mkdir build <br/>
   cd build <br/>
-  cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DQML_INSTALL_DIR:PATH="xxxxx" <br/>
-  # Replace xxxxx with the path with other qml libs (e.g in Fedora it's "/usr/lib64/qt5/qml") <br/>
+  cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DQML_INSTALL_DIR:PATH=$(QT_SELECT=5 qmake -query QT_INSTALL_QML) <br/>
   make <br/>
   # As root: <br/>
   make install <br/>
