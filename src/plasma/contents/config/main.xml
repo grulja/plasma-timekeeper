@@ -12,6 +12,9 @@
     <entry name="reset_on_shutdown" type="Bool">
       <default>true</default>
     </entry>
+    <entry name="show_total_activity_time" type="Bool">
+      <default>false</default>
+    </entry>
   </group>
 
 </kcfg>
