@@ -352,6 +352,16 @@ QString ActivityModel::currentActivityTime() const
     return QString();
 }
 
+QString ActivityModel::totalActivityTime() const
+{
+    QTime totalTime = QTime(0, 0);
+    Q_FOREACH (ActivityModelItem *item, d->list) {
+      totalTime = totalTime.addSecs(QTime(0, 0).secsTo(item->activityTime()));
+    }
+
+    return totalTime.toString(Qt::RFC2822Date);
+}
+
 bool ActivityModel::timeTrackingEnabled() const
 {
     return d->timeTrackingEnabled;
