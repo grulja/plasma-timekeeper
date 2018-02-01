@@ -1,5 +1,5 @@
 /*
-    Copyright 2016 Jan Grulich <jgrulich@redhat.com>
+    Copyright 2016-2018 Jan Grulich <jgrulich@redhat.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ class QmlPlugins : public QQmlExtensionPlugin
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
 public:
-    void registerTypes(const char * uri) Q_DECL_OVERRIDE;
+    void registerTypes(const char *uri) Q_DECL_OVERRIDE;
 };
 
 #endif // PLASMA_TIMEKEEPER_QML_PLUGINS_H

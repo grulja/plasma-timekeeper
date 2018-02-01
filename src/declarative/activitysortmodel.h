@@ -1,5 +1,5 @@
 /*
-    Copyright 2016 Jan Grulich <jgrulich@redhat.com>
+    Copyright 2016-2018 Jan Grulich <jgrulich@redhat.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -30,12 +30,12 @@ class Q_DECL_EXPORT ActivitySortModel : public QSortFilterProxyModel
 Q_OBJECT
 Q_PROPERTY(QAbstractItemModel * sourceModel READ sourceModel WRITE setSourceModel)
 public:
-    explicit ActivitySortModel(QObject* parent = 0);
+    explicit ActivitySortModel(QObject *parent = 0);
     virtual ~ActivitySortModel();
 
 protected:
-    bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const Q_DECL_OVERRIDE;
-    bool lessThan(const QModelIndex& left, const QModelIndex& right) const Q_DECL_OVERRIDE;
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const Q_DECL_OVERRIDE;
+    bool lessThan(const QModelIndex &left, const QModelIndex &right) const Q_DECL_OVERRIDE;
 };
 
 

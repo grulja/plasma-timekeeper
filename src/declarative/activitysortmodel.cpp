@@ -1,5 +1,5 @@
 /*
-    Copyright 2016 Jan Grulich <jgrulich@redhat.com>
+    Copyright 2016-2018 Jan Grulich <jgrulich@redhat.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@
 
 const static QString OTHER_APPLICATIONS_NAME = i18n("other applications");
 
-ActivitySortModel::ActivitySortModel(QObject* parent)
+ActivitySortModel::ActivitySortModel(QObject *parent)
     : QSortFilterProxyModel(parent)
 {
     setDynamicSortFilter(true);
@@ -35,13 +35,13 @@ ActivitySortModel::~ActivitySortModel()
 {
 }
 
-bool ActivitySortModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
+bool ActivitySortModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
     // TODO maybe
     return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 }
 
-bool ActivitySortModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
+bool ActivitySortModel::lessThan(const QModelIndex &left, const QModelIndex &right) const
 {
     const QString leftName = sourceModel()->data(left, ActivityModel::ActivityNameRole).toString();
     const QString rightName = sourceModel()->data(right, ActivityModel::ActivityNameRole).toString();

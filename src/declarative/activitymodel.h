@@ -1,5 +1,5 @@
 /*
-    Copyright 2016 Jan Grulich <jgrulich@redhat.com>
+    Copyright 2016-2018 Jan Grulich <jgrulich@redhat.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -35,22 +35,22 @@ class ActivityModelItem : public QObject
 {
 Q_OBJECT
 public:
-    explicit ActivityModelItem(QObject* parent = 0);
+    explicit ActivityModelItem(QObject *parent = 0);
     virtual ~ActivityModelItem();
 
-    void setActivityIcon(const QPixmap& icon);
+    void setActivityIcon(const QPixmap &icon);
     QPixmap activityIcon() const;
 
-    void setActivityDefaultIcon(const QPixmap& icon);
+    void setActivityDefaultIcon(const QPixmap &icon);
     QPixmap activityDefaultIcon() const;
 
-    void setActivityName(const QString& name);
+    void setActivityName(const QString &name);
     QString activityName() const;
 
-    void setActivityTime(const QTime& time);
+    void setActivityTime(const QTime &time);
     QTime activityTime() const;
 
-    void setConfigGroup(const QString& group);
+    void setConfigGroup(const QString &group);
     QString configGroup() const;
 
     void setPercentualUsage(int percentualUsage);
@@ -78,7 +78,7 @@ Q_PROPERTY(bool resetOnSuspend WRITE setResetOnSuspend)
 Q_PROPERTY(bool resetOnShutdown WRITE setResetOnShutdown)
 public:
 
-    explicit ActivityModel(QObject* parent = 0);
+    explicit ActivityModel(QObject *parent = 0);
     virtual ~ActivityModel();
 
     enum ItemRole {
@@ -88,8 +88,8 @@ public:
         ActivityPercentualUsage
     };
 
-    int rowCount(const QModelIndex& parent) const Q_DECL_OVERRIDE;
-    QVariant data(const QModelIndex& index, int role) const Q_DECL_OVERRIDE;
+    int rowCount(const QModelIndex &parent) const Q_DECL_OVERRIDE;
+    QVariant data(const QModelIndex &index, int role) const Q_DECL_OVERRIDE;
     virtual QHash< int, QByteArray > roleNames() const Q_DECL_OVERRIDE;
 
     QPixmap currentActivityIcon() const;
@@ -104,7 +104,7 @@ public:
     void setResetOnShutdown(bool reset);
 
 public Q_SLOTS:
-    void ignoreActivity(const QString& activityName);
+    void ignoreActivity(const QString &activityName);
     void inhibit();
     void uninhibit();
     void resetTimeStatistics();
@@ -127,3 +127,5 @@ private:
 };
 
 #endif // PLASMA_TIMEKEEPER_ACTIVITY_MODEL_H
+
+

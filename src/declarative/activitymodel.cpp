@@ -1,5 +1,5 @@
 /*
-    Copyright 2016 Jan Grulich <jgrulich@redhat.com>
+    Copyright 2016-2018 Jan Grulich <jgrulich@redhat.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -64,7 +64,7 @@ public:
 /*                          ActivityModelItem                              *
  * ----------------------------------------------------------------------- */
 
-ActivityModelItem::ActivityModelItem(QObject* parent)
+ActivityModelItem::ActivityModelItem(QObject *parent)
     : QObject(parent),
       d(new Private())
 {
@@ -75,7 +75,7 @@ ActivityModelItem::~ActivityModelItem()
     delete d;
 }
 
-void ActivityModelItem::setActivityIcon(const QPixmap& icon)
+void ActivityModelItem::setActivityIcon(const QPixmap &icon)
 {
     d->activityIcon = icon;
 }
@@ -85,7 +85,7 @@ QPixmap ActivityModelItem::activityIcon() const
     return d->activityIcon;
 }
 
-void ActivityModelItem::setActivityDefaultIcon(const QPixmap& icon)
+void ActivityModelItem::setActivityDefaultIcon(const QPixmap &icon)
 {
     d->activityDefaultIcon = icon;
 }
@@ -95,7 +95,7 @@ QPixmap ActivityModelItem::activityDefaultIcon() const
     return d->activityDefaultIcon;
 }
 
-void ActivityModelItem::setActivityName(const QString& name)
+void ActivityModelItem::setActivityName(const QString &name)
 {
     d->activityName = name;
 }
@@ -105,7 +105,7 @@ QString ActivityModelItem::activityName() const
     return d->activityName;
 }
 
-void ActivityModelItem::setActivityTime(const QTime& time)
+void ActivityModelItem::setActivityTime(const QTime &time)
 {
     d->activityTime = time;
 }
@@ -115,7 +115,7 @@ QTime ActivityModelItem::activityTime() const
     return d->activityTime;
 }
 
-void ActivityModelItem::setConfigGroup(const QString& group)
+void ActivityModelItem::setConfigGroup(const QString &group)
 {
     d->configGroup = group;
 }
@@ -151,13 +151,11 @@ public:
       resetOnSuspend(false),
       resetOnShutdown(false),
       screenLocked(false),
-      timeTrackingEnabled(true),
-      timer(new QTimer())
+      timeTrackingEnabled(true)
     { }
 
     ~Private()
     {
-        delete timer;
     }
 
     bool preparingForSleep;
@@ -178,7 +176,7 @@ public:
     QStringList ignoredActivitiesList;
 
     // Timer
-    QTimer* timer;
+    QTimer timer;
 
     QDBusUnixFileDescriptor inhibitFileDescriptor;
 };
@@ -186,7 +184,7 @@ public:
 /*                          ActivityModel                                  *
  * ----------------------------------------------------------------------- */
 
-ActivityModel::ActivityModel(QObject* parent)
+ActivityModel::ActivityModel(QObject *parent)
     : QAbstractListModel(parent),
       d(new Private())
 {
@@ -200,8 +198,8 @@ ActivityModel::ActivityModel(QObject* parent)
     // I guess there is a minimum chance that the applet will be started while the system
     // is locked, but it's better to be sure (e.g. plasmashell crash)
     QDBusPendingCall dbusCall = iface.asyncCall(QStringLiteral("GetActive"));
-    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(dbusCall);
-    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, [this] (QDBusPendingCallWatcher* watcher) {
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(dbusCall);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, [this] (QDBusPendingCallWatcher *watcher) {
         QDBusPendingReply<bool> reply = *watcher;
         if (reply.isValid()) {
             d->screenLocked = reply.value();
@@ -209,7 +207,7 @@ ActivityModel::ActivityModel(QObject* parent)
     });
 
     connect(KWindowSystem::self(), &KWindowSystem::activeWindowChanged, this, &ActivityModel::activeWindowChanged, Qt::UniqueConnection);
-    connect(d->timer, &QTimer::timeout, this, &ActivityModel::updateCurrentActivityTime);
+    connect(&d->timer, &QTimer::timeout, this, &ActivityModel::updateCurrentActivityTime);
 
     // TODO check if logind is running
 
@@ -237,7 +235,7 @@ ActivityModel::ActivityModel(QObject* parent)
 
     // Load previous values
     KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
-    Q_FOREACH (const QString& groupName, config->groupList()) {
+    foreach (const QString &groupName, config->groupList()) {
         KConfigGroup group(config, groupName);
         if (group.isValid()) {
             if (groupName == QStringLiteral("general")) {
@@ -246,7 +244,7 @@ ActivityModel::ActivityModel(QObject* parent)
                 continue;
             }
 
-            ActivityModelItem *item = new ActivityModelItem();
+            ActivityModelItem *item = new ActivityModelItem(this);
             item->setActivityName(group.readEntry(QStringLiteral("name")));
             item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("plasma")).pixmap(QSize(64, 64)));
             item->setActivityTime(QTime::fromString(group.readEntry(QStringLiteral("time"), groupName)));
@@ -268,12 +266,12 @@ ActivityModel::~ActivityModel()
     delete d;
 }
 
-QVariant ActivityModel::data(const QModelIndex& index, int role) const
+QVariant ActivityModel::data(const QModelIndex &index, int role) const
 {
     const int row = index.row();
 
     if (row >= 0 && row < d->list.count()) {
-        ActivityModelItem * item = d->list.at(row);
+        ActivityModelItem *item = d->list.at(row);
 
         switch (role) {
             case ActivityIconRole:
@@ -296,7 +294,7 @@ QVariant ActivityModel::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-int ActivityModel::rowCount(const QModelIndex& parent) const
+int ActivityModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return d->list.count();
@@ -354,8 +352,8 @@ QString ActivityModel::currentActivityTime() const
 
 QString ActivityModel::totalActivityTime() const
 {
-    QTime totalTime = QTime(0, 0);
-    Q_FOREACH (ActivityModelItem *item, d->list) {
+    QTime totalTime;
+    foreach (ActivityModelItem *item, d->list) {
       totalTime = totalTime.addSecs(QTime(0, 0).secsTo(item->activityTime()));
     }
 
@@ -390,7 +388,7 @@ void ActivityModel::setResetOnShutdown(bool reset)
     d->resetOnShutdown = reset;
 }
 
-void ActivityModel::ignoreActivity(const QString& activityName)
+void ActivityModel::ignoreActivity(const QString &activityName)
 {
     if (!d->ignoredActivitiesList.contains(activityName)) {
         d->ignoredActivitiesList.append(activityName);
@@ -506,7 +504,7 @@ void ActivityModel::resetTimeStatistics()
 {
     KSharedConfigPtr config = KSharedConfig::openConfig(QStringLiteral("plasma-timekeeper"), KConfig::SimpleConfig);
 
-    Q_FOREACH (ActivityModelItem* item, d->list) {
+    foreach (ActivityModelItem *item, d->list) {
         config->deleteGroup(item->configGroup());
 
         const int row = d->list.indexOf(item);
@@ -559,7 +557,7 @@ void ActivityModel::activeWindowChanged(WId window)
 
     if (it == d->list.constEnd()) {
         qCDebug(PLASMA_TIMEKEEPER) << "Adding new activity item " << activityName;
-        ActivityModelItem *item = new ActivityModelItem();
+        ActivityModelItem *item = new ActivityModelItem(this);
         item->setActivityName(activityName);
         item->setActivityDefaultIcon(QIcon::fromTheme(QStringLiteral("plasma")).pixmap(QSize(64, 64)));
         item->setActivityIcon(KWindowSystem::icon(window, 64, 64, true));
@@ -582,9 +580,9 @@ void ActivityModel::activeWindowChanged(WId window)
     // Process the next activity
     if (!d->timeTrackingEnabled && !d->screenLocked) {
         // Start timer to update the time every minute
-        d->timer->stop();
+        d->timer.stop();
         // TODO make this configurable
-        d->timer->start(60000);
+        d->timer.start(60000);
     }
 
     // Save current time and activity
@@ -639,10 +637,10 @@ void ActivityModel::prepareForShutdownChanged(bool shutdown)
 
 void ActivityModel::updateCurrentActivityTime()
 {
-    QTime totalTime = QTime(0, 0);
+    QTime totalTime;
 
     // Get the total time + update the current item
-    Q_FOREACH (ActivityModelItem *item, d->list) {
+    foreach (ActivityModelItem *item, d->list) {
         // Update current activity time
         if (d->currentActiveWindow == item->activityName()) {
             item->addSeconds(d->currentTime.secsTo(QTime::currentTime()));
@@ -661,7 +659,7 @@ void ActivityModel::updateCurrentActivityTime()
         totalTime = totalTime.addSecs(QTime(0, 0).secsTo(item->activityTime()));
     }
 
-    Q_FOREACH (ActivityModelItem *item, d->list) {
+    foreach (ActivityModelItem *item, d->list) {
         // Update percentual usage according to the total time
         const int totalTimeSecs = QTime(0, 0).secsTo(totalTime);
         const int itemTimeSecs = QTime(0, 0).secsTo(item->activityTime());
@@ -683,7 +681,7 @@ void ActivityModel::updateCurrentActivityTime()
 
     if (d->timeTrackingEnabled) {
         d->currentTime = QTime::currentTime();
-        d->timer->start(60000);
+        d->timer.start(60000);
     }
 }
 
@@ -699,6 +697,6 @@ void ActivityModel::updateTrackingState()
         // Reset current item and stop the timer
         d->currentActiveWindow = QString();
         d->currentTime = QTime::currentTime();
-        d->timer->stop();
+        d->timer.stop();
     }
 }

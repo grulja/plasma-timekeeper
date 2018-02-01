@@ -22,7 +22,6 @@ find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     Core
     DBus
     Quick
-    QuickWidgets
     UiTools
     Widgets
 )
