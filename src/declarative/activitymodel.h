@@ -72,6 +72,7 @@ Q_OBJECT
 Q_PROPERTY(QPixmap currentActivityIcon READ currentActivityIcon NOTIFY currentActivityChanged)
 Q_PROPERTY(QString currentActivityName READ currentActivityName NOTIFY currentActivityChanged)
 Q_PROPERTY(QString currentActivityTime READ currentActivityTime NOTIFY currentActivityChanged)
+Q_PROPERTY(QString totalActivityTime READ totalActivityTime)
 Q_PROPERTY(bool timeTrackingEnabled READ timeTrackingEnabled WRITE setTimeTrackingEnabled NOTIFY timeTrackingEnabledChanged)
 Q_PROPERTY(bool resetOnSuspend WRITE setResetOnSuspend)
 Q_PROPERTY(bool resetOnShutdown WRITE setResetOnShutdown)
@@ -94,6 +95,7 @@ public:
     QPixmap currentActivityIcon() const;
     QString currentActivityName() const;
     QString currentActivityTime() const;
+    QString totalActivityTime() const;
 
     bool timeTrackingEnabled() const;
     void setTimeTrackingEnabled(bool enabled);

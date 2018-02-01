@@ -30,9 +30,10 @@ Item {
 
     property alias cfg_reset_on_suspend: resetOnSuspendCheckbox.checked
     property alias cfg_reset_on_shutdown: resetOnShutdownCheckbox.checked
+    property alias cfg_show_total_activity_time: showTotalActivityTimeCheckbox.checked
 
     Label {
-        id: label
+        id: resetLabel
         anchors {
             left: parent.left
             top: parent.top
@@ -44,7 +45,7 @@ Item {
         id: pageColumn
         anchors {
             left: parent.left
-            top: label.bottom
+            top: resetLabel.bottom
             topMargin: Math.round(units.gridUnit / 3)
         }
         spacing: units.smallSpacing
@@ -57,6 +58,23 @@ Item {
         CheckBox {
             id: resetOnShutdownCheckbox
             text: i18n("On shutdown or restart")
+        }
+    }
+    Label {
+        id: presentationLabel
+        anchors {
+            left: parent.left
+            top: pageColumn.bottom
+        }
+        text: i18n("Presentation:")
+    }
+    CheckBox {
+        id: showTotalActivityTimeCheckbox
+        text: i18n("Show total Activity Time")
+        anchors {
+            left: parent.left
+            top: presentationLabel.bottom
+            topMargin: Math.round(units.gridUnit / 3)
         }
     }
 }

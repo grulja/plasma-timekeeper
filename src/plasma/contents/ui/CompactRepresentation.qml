@@ -62,7 +62,7 @@ Item {
         elide: Text.ElideRight
         font.pointSize: theme.smallestFont.pointSize
         opacity: 0.6
-        text: activityModel.currentActivityTime
+        text: plasmoid.configuration.show_total_activity_time? activityModel.currentActivityTime + " | Σ = " + activityModel.totalActivityTime : activityModel.currentActivityTime
     }
 
     PlasmaCore.SvgItem {
