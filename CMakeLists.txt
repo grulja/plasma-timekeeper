@@ -1,11 +1,9 @@
 project(plasma-timekeeper)
 
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
-set(QT_MIN_VERSION "5.4.0")
+set(QT_MIN_VERSION "5.7.0")
 
-set(PROJECT_VERSION "5.5.50")
-set(PROJECT_VERSION_MAJOR 5)
-set(PLASMANM_VERSION_STRING ${PROJECT_VERSION} )
+set(PROJECT_VERSION "1.0")
 
 ################# set KDE specific information #################
 
@@ -38,9 +36,7 @@ find_package(KF5 REQUIRED
     WindowSystem
 )
 
-add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0 -DQT_NO_KEYWORDS)
-add_definitions(-DQT_USE_FAST_CONCATENATION -DQT_USE_FAST_OPERATOR_PLUS)
-remove_definitions(-DQT_NO_CAST_FROM_ASCII -DQT_STRICT_ITERATORS -DQT_NO_CAST_FROM_BYTEARRAY)
+add_definitions(-DQT_NO_URL_CAST_FROM_STRING)
 
 add_subdirectory(src)
 
