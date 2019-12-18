@@ -637,7 +637,7 @@ void ActivityModel::prepareForShutdownChanged(bool shutdown)
 
 void ActivityModel::updateCurrentActivityTime()
 {
-    QTime totalTime;
+    QTime totalTime(0, 0);
 
     // Get the total time + update the current item
     foreach (ActivityModelItem *item, d->list) {
