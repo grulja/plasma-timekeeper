@@ -17,7 +17,7 @@ How to compile
 
 Distributions
 ------------------------------
-If you don't think that compilication is a good option for you, you can try to ask your distribution packagers to include it in official repositories.
+If you don't think that compilation is a good option for you, you can try to ask your distribution packagers to include it in official repositories.
 
 List of distributions providing plasma-timekeeper in their repositories: <br/>
 <b>Archlinux</b> - https://aur.archlinux.org/packages/timekeeper-git <br/>
